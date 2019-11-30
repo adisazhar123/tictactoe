@@ -120,7 +120,6 @@ class GameGui(threading.Thread):
             tkinter.messagebox.showinfo("Tic-Tac-Toe", self.player2_name_entry.get())
 
 
-
 master = tkinter.Tk()
 app = GameGui(master).start()
 
