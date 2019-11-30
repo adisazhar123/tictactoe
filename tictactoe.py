@@ -1,8 +1,7 @@
 import tkinter
-from tkinter import *
+from tkinter import StringVar, Label, Entry, Button, DISABLED
 import threading
 from tkinter import messagebox
-
 
 class GameGui(threading.Thread):
     def __init__(self, master):
