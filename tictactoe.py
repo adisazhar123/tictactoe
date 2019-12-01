@@ -30,6 +30,8 @@ class GameGui(threading.Thread):
         self.TYPE_PLAYER_X = 'player:x'
         self.TYPE_PLAYER_O = 'player:o'
 
+        self.turn = None
+
         self.button_mapping = {}
 
         self.identifier = shortuuid.uuid()
@@ -163,7 +165,9 @@ class GameGui(threading.Thread):
         selected = self.list_box.get(self.list_box.curselection())
         code = selected.split(' ')[1]
         game_room_server_name = "game_room_server_{}".format(code)
+        self.connect_to_game_room(game_room_server_name)
 
+    def connect_to_game_room(self, game_room_server_name):
         self.game_room_server = self.connect_to_server(game_room_server_name)
         response = self.game_room_server.connect({'identifier': self.identifier}, self.TYPE_PLAYER)
 
@@ -172,6 +176,7 @@ class GameGui(threading.Thread):
         if response['status'] == 'ok':
             self.role = response['data']['participant_type']
             self.positions = response['data']['positions']
+            self.turn = response['data']['turn']
 
             self.init_game_screen()
             tkinter.messagebox.showinfo("Tic-Tac-Toe", response['message'])
@@ -179,11 +184,14 @@ class GameGui(threading.Thread):
     def btnClick(self, buttons):
         if buttons["text"] != '':
             tkinter.messagebox.showinfo("Tic-Tac-Toe", "Button already Clicked!")
+        elif self.role != self.turn:
+            tkinter.messagebox.showinfo("Tic-Tac-Toe", "Not your turn")
         else:
             location = self.button_mapping[buttons] - 1
             player_type = self.role
 
             response = self.game_room_server.make_a_move(location, player_type)
+            self.turn = response['data']['turn']
             print(response)
 
     def checkForWin(self):
@@ -219,24 +227,23 @@ class GameGui(threading.Thread):
         for room in rooms:
             self.list_box.insert(int(room['created_at']), "Room {}".format(room['id']))
 
-    # TODO:
+    def change_button_label(self, button, val, turn):
+        button['text'] = val
+        self.turn = turn
+        print(self.turn)
+
     @Pyro4.expose
-    def update_positions(self, request):
-        print('todo function')
-        # TODO:
-        # for idx, position in enumerate(request):
-        #     btn_val = ''
-        #     if position == self.TYPE_PLAYER_O:
-        #         btn_val = 'O'
-        #     elif position == self.TYPE_PLAYER_X:
-        #         btn_val = 'X'
-        #     print(btn_val)
-        # self.button1.config(text="ahaha")
-        # return "ok"
-        # print(len(self.button_mapping))
-            # if btn_val != '':
-            #     for button, number in self.button_mapping.items():
-            #         print(button)
+    def update_positions(self, request, turn):
+        for idx, position in enumerate(request):
+            btn_val = ''
+            if position == self.TYPE_PLAYER_O:
+                btn_val = 'O'
+            elif position == self.TYPE_PLAYER_X:
+                btn_val = 'X'
+            if btn_val != '':
+                for button, number in self.button_mapping.items():
+                    if number == (idx+1):
+                        threading.Thread(target=self.change_button_label, args=(button, btn_val, turn), daemon=True).start()
 
     @Pyro4.expose
     def update_list_of_game_rooms(self, request):

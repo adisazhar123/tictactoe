@@ -94,7 +94,8 @@ class GameRoomController:
             'message': message,
             'data': {
                 'participant_type': player_type,
-                'positions': self.game_positions
+                'positions': self.game_positions,
+                'turn': self.player_turn
             }
         }
 
@@ -105,7 +106,8 @@ class GameRoomController:
                 'message': 'only player_type player can move',
                 'data': {
                     'winner': None,
-                    'positions': self.game_positions
+                    'positions': self.game_positions,
+                    'turn': self.player_turn
                 }
             }
         elif self.game_positions[location] is not None:
@@ -114,27 +116,45 @@ class GameRoomController:
                 'message': 'position is not empty',
                 'data': {
                     'winner': None,
-                    'positions': self.game_positions
+                    'positions': self.game_positions,
+                    'turn': self.player_turn
                 }
             }
-
+        elif self.player_turn != player_type:
+            return {
+                'status': 'error',
+                'message': 'it is {} turn'.format(self.player_turn),
+                'data': {
+                    'winner': None,
+                    'positions': self.game_positions,
+                    'turn': self.player_turn
+                }
+            }
         self.lock.acquire()
+
         self.game_positions[location] = player_type
         response = self.check_winner()
         self.positions_to_update.put(self.game_positions)
+        self.change_player_turn()
         self.update_positions()
-        self.lock.release()
 
-        print('game positions: ', self.game_positions)
+        self.lock.release()
 
         return {
             'status': 'ok',
             'message': 'successfully moved',
             'data': {
                 'winner': response,
-                'positions': self.game_positions
+                'positions': self.game_positions,
+                'turn': self.player_turn
             }
         }
+
+    def change_player_turn(self):
+        if self.player_turn == self.TYPE_PLAYER_X:
+            self.player_turn = self.TYPE_PLAYER_O
+        else:
+            self.player_turn = self.TYPE_PLAYER_X
 
     def check_winner(self):
         # Todo return which player won
@@ -163,6 +183,6 @@ class GameRoomController:
         position = self.positions_to_update.get()
         for participant in self.participant_connections:
             try:
-                participant.update_positions(position)
+                participant.update_positions(position, self.player_turn)
             except CommunicationError as e:
                 print(e.message)
