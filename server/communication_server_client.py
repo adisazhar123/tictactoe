@@ -63,7 +63,7 @@ if __name__ == "__main__":
         # this server refers to communication server 
         # start section
         
-        print(server.available_rooms_command())
+        print(server.create_room_command())
 
         # end section to communicate, always wrap with try except 
     except (ConnectionClosedError, CommunicationError) as e:

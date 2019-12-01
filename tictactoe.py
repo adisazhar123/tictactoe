@@ -5,19 +5,21 @@ from tkinter import messagebox
 
 import Pyro4
 import shortuuid
+import time
+import os, sys
 import re
-from Pyro4.errors import CommunicationError
+from Pyro4.errors import CommunicationError, ConnectionClosedError
 
 
 class GameGui(threading.Thread):
     def __init__(self, master):
         threading.Thread.__init__(self)
         self.master = master
-
+        self.interval = 1
         self.player_a_name = StringVar()
         self.player_b_name = StringVar()
 
-        self.main_server = self.connect_to_server('main_server')
+        self.communication_server = self.connect_to_server('communication_server')
         self.game_room_server = None
 
         self.b_click = True
@@ -61,8 +63,12 @@ class GameGui(threading.Thread):
         self.list_box.grid(row=3, column=0)
         self.list_box.bind('<Double-1>', self.list_box_double_click_handler)
 
-        rooms_response = self.main_server.available_rooms_func()
-        print(rooms_response)
+        try:
+            rooms_response = self.communication_server.available_rooms_command()
+            print(rooms_response)
+        except (ConnectionClosedError, CommunicationError) as e:
+            print(str(e))
+            self.gracefully_exits()
         self.render_list_of_game_rooms(rooms_response['data'])
 
     def init_player_labels(self):
@@ -142,9 +148,8 @@ class GameGui(threading.Thread):
         self.button_mapping[self.button9] = 9
 
     def create_game_room_server(self):
-        response = self.main_server.create_room_func()
-        rooms_response = self.main_server.available_rooms_func()
-        print(rooms_response)
+        response = self.communication_server.create_room_command()
+        rooms_response = self.communication_server.available_rooms_command()
         self.render_list_of_game_rooms(rooms_response['data'])
 
         if response['status'] == 'ok':
@@ -232,6 +237,40 @@ class GameGui(threading.Thread):
         self.turn = turn
         print(self.turn)
 
+    def gracefully_exits(self):
+        print("disconnecting..")
+        time.sleep(0.5)
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
+
+    def communicate(self) -> bool:
+        try:
+            res = self.communication_server.check_connection()
+            if res == 'ok':
+                pass
+        except:
+            return False
+        return True
+
+    def job_ping_server_ping_ack(self) -> threading.Thread:
+        t = threading.Thread(target=self.ping_server)
+        t.start()
+        return t
+
+    def ping_server(self):
+        while True:
+            alive = self.communicate()
+            if not alive:
+                alive = self.communicate()
+                if not alive:
+                    print("\ncommunication server is down [DETECT BY ping ack]\n")
+                    break
+            time.sleep(self.interval)
+        self.gracefully_exits()
+
+    # TODO:
     @Pyro4.expose
     def update_positions(self, request, turn):
         for idx, position in enumerate(request):
@@ -272,11 +311,20 @@ def start_with_ns(gui_server):
         daemon.requestLoop()
     print('\nexited..')
 
+
 if __name__ == "__main__":
 
     master = tkinter.Tk()
 
     app = GameGui(master)
+    try:
+        app.interval = app.communication_server.ping_interval()
+        app.communication_server._pyroTimeout = app.interval
+        tpa = app.job_ping_server_ping_ack()
+    except:
+        print('failed to connect with communication server')
+        sys.exit(0)
+
     print(app.identifier)
 
     t = threading.Thread(target=start_with_ns, args=(app,))

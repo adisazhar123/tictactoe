@@ -5,7 +5,7 @@ import Pyro4
 import Pyro4.errors
 import shortuuid
 import time
-from game.game_room_controller import GameRoomController
+from game_room_controller import GameRoomController
 from threading import Lock
 import threading
 import logging
@@ -22,7 +22,6 @@ class MainServerController(object):
         self.config = {'host': 'localhost', 'port': 1337}
         self.available_rooms = []
         self.lock = Lock()
-
         self.threads = []
 
     @Pyro4.expose
@@ -59,7 +58,7 @@ class MainServerController(object):
         except Exception as e:
             return {
                 'status': 'error',
-                'message': e.message,
+                'message': e,
                 'data': None
             }
 
