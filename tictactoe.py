@@ -212,9 +212,10 @@ class GameGui(threading.Thread):
         for room in rooms:
             self.list_box.insert(int(room['created_at']), "Room {}".format(room['id']))
 
+    # TODO:
     @Pyro4.expose
     def update_positions(self, request):
-        # TODO:
+        print('here')
         # for idx, position in enumerate(request):
         #     btn_val = ''
         #     if position == self.TYPE_PLAYER_O:
