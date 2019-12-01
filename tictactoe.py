@@ -80,39 +80,39 @@ class GameGui(threading.Thread):
         self.init_game_positions()
 
     def init_game_buttons(self):
-        self.button1 = Button(self.master, text=" ", font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button1 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button1))
         self.button1.grid(row=3, column=0)
 
-        self.button2 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button2 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button2))
         self.button2.grid(row=3, column=1)
 
-        self.button3 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button3 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button3))
         self.button3.grid(row=3, column=2)
 
-        self.button4 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button4 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button4))
         self.button4.grid(row=4, column=0)
 
-        self.button5 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button5 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button5))
         self.button5.grid(row=4, column=1)
 
-        self.button6 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button6 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button6))
         self.button6.grid(row=4, column=2)
 
-        self.button7 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button7 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button7))
         self.button7.grid(row=5, column=0)
 
-        self.button8 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button8 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button8))
         self.button8.grid(row=5, column=1)
 
-        self.button9 = Button(self.master, text=' ', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button9 = Button(self.master, text=None, font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button9))
         self.button9.grid(row=5, column=2)
 
@@ -144,19 +144,26 @@ class GameGui(threading.Thread):
         response = self.game_room_server.connect(self.identifier, self.TYPE_PLAYER)
         print(response)
         if response['status'] == 'ok':
-            self.role = response['data']
+            self.role = response['data']['participant_type']
+            self.positions = response['data']['positions']
+
             self.init_game_screen()
             tkinter.messagebox.showinfo("Tic-Tac-Toe", response['message'])
 
     def btnClick(self, buttons):
-        if buttons["text"] == " " and self.b_click == True:
+        if buttons["text"] is not None:
+            tkinter.messagebox.showinfo("Tic-Tac-Toe", "Button already Clicked!")
+        else:
+        #     TODO: Send position update to server
+
+        if buttons["text"] is None and self.b_click == True:
             buttons["text"] = "X"
             self.b_click = False
             pa = self.player1_name_entry.get() + " Wins!"
             self.checkForWin()
             self.flag += 1
 
-        elif buttons["text"] == " " and self.b_click == False:
+        elif buttons["text"] is None and self.b_click == False:
             buttons["text"] = "O"
             self.b_click = True
             self.checkForWin()

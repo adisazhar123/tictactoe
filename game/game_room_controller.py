@@ -45,7 +45,10 @@ class GameRoomController:
             return {
                 'status': 'ok',
                 'message': message,
-                'data': player_type
+                'data': {
+                    'participant_type': player_type,
+                    'positions': self.game_positions
+                }
             }
         # Participant will become spectators when the players amount is fulfilled
         elif join_type == self.TYPE_SPECTATOR or len(self.players) >= self.max_players:
@@ -78,7 +81,10 @@ class GameRoomController:
         return {
             'status': 'ok',
             'message': message,
-            'data': player_type
+            'data': {
+                'participant_type': player_type,
+                'positions': self.game_positions
+            }
         }
 
     def make_a_move(self, location, player_type):
