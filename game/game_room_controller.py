@@ -4,6 +4,7 @@ from threading import Lock, Thread
 # TODO:
 # 1. contact main server once initialized
 # 2. propagate data to connected users
+from Pyro4.errors import CommunicationError
 
 
 @Pyro4.expose
@@ -12,6 +13,9 @@ class GameRoomController:
         self.game_room_name = identity
         self.players = []
         self.spectators = []
+
+        # pyro objects of participants
+        self.participant_connections = []
 
         # init types
         self.TYPE_SPECTATOR = 'spectator'
@@ -69,6 +73,8 @@ class GameRoomController:
         print('players: ', self.players)
         print('spectators: ', self.spectators)
 
+        # TODO: save participant pyro4 connection obj
+
         return {
             'status': 'ok',
             'message': message,
@@ -76,6 +82,16 @@ class GameRoomController:
         }
 
     def make_a_move(self, location, player_type):
+        if self.game_positions[location] is not None:
+            return {
+                'status': 'error',
+                'message': 'position is not empty',
+                'data': {
+                    'winner': None,
+                    'positions': self.game_positions
+                }
+            }
+
         self.lock.acquire()
         self.game_positions[location] = player_type
         response = self.check_winner()
@@ -113,3 +129,12 @@ class GameRoomController:
         return {
             'status': 'ok'
         }
+
+    def update_positions(self):
+        for participant in self.participant_connections:
+            try:
+                participant.update_positions(self.game_positions)
+            except CommunicationError as e:
+                print(e.message)
+            except Exception as e:
+                print(e.message)

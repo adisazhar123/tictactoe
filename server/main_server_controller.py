@@ -5,9 +5,10 @@ import Pyro4
 import Pyro4.errors
 import shortuuid
 import time
-from game_room_controller import GameRoomController
+from game.game_room_controller import GameRoomController
 from threading import Lock
 import threading
+
 
 class MainServerController(object):
     def __init__(self):
@@ -16,29 +17,32 @@ class MainServerController(object):
         self.lock = Lock()
 
     @Pyro4.expose
-    def create_room_func(self, username) -> str:
+    def create_room_func(self) -> dict:
         self.lock.acquire()
         identity = shortuuid.random(length=4)
         t = threading.Thread(target=self.__create_room, args=(identity,))
+        t.daemon = True
         t.start()
         self.lock.release()
         self.available_rooms.append({
-            'id' : identity,
-            'username' : username,
-            'created_at' : time.time()
+            'id': identity,
+            'created_at': time.time()
         })
-        return 'room created, uri : {}'.format(identity)
-        # return os.getcwd()
+        print('room created')
+        return {
+            'status': 'ok',
+            'message': 'game room succesfully created',
+            'data': identity
+        }
 
     @Pyro4.expose
-    def available_rooms_func(self) -> str:
-        res = ""
-        res = res + "------------------------\n"
-        for x in self.available_rooms:
-            for y in x:
-                res = res + "{}: {}\n".format(y, x[y])
-            res = res + "------------------------\n"
-        return res
+    def available_rooms_func(self) -> dict:
+        print('list of available rooms')
+        return {
+            'status': 'ok',
+            'message': 'list of game rooms',
+            'data': self.available_rooms
+        }
 
     def __create_room(self, identity):
         game_room = GameRoomController(identity)

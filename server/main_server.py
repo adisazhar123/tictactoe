@@ -1,8 +1,9 @@
 import os, sys
 sys.path.insert(1, '/home/andika/Documents/learn/python/tictactoe/server')
 
-from main_server_controller import MainServerController
+from server.main_server_controller import MainServerController
 import Pyro4
+
 
 def get_global_server(name = "globalserver"):
     try:
@@ -11,6 +12,7 @@ def get_global_server(name = "globalserver"):
         return gserver
     except:
         sys.exit(0)
+
 
 def start_with_ns():
     __host = "localhost"

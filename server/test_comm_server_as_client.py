@@ -10,6 +10,7 @@ def connect_server():
     except CommunicationError as e:
         print(e)
 
+
 if __name__ == "__main__":
     server = connect_server()
     response = server.create_room_func('andi')
@@ -17,4 +18,3 @@ if __name__ == "__main__":
     time.sleep(2)
     response = server.available_rooms_func()
     print(response)
-
