@@ -5,6 +5,7 @@ from tkinter import messagebox
 
 import Pyro4
 import shortuuid
+import re
 from Pyro4.errors import CommunicationError
 
 
@@ -31,6 +32,8 @@ class GameGui(threading.Thread):
 
         self.identifier = shortuuid.uuid()
         self.role = None
+
+        self.button_mapping = {}
 
         label = Label(self.master, text="Tic Tac Toe", font='Times 20 bold', bg='white', fg='black')
         label.grid(row=1, column=0, columnspan=8)
@@ -84,37 +87,55 @@ class GameGui(threading.Thread):
                               command=lambda: self.btnClick(self.button1))
         self.button1.grid(row=3, column=0)
 
+        self.button_mapping[self.button1] = 1
+
         self.button2 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button2))
         self.button2.grid(row=3, column=1)
+
+        self.button_mapping[self.button2] = 2
 
         self.button3 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button3))
         self.button3.grid(row=3, column=2)
 
+        self.button_mapping[self.button3] = 3
+
         self.button4 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button4))
         self.button4.grid(row=4, column=0)
+
+        self.button_mapping[self.button4] = 4
 
         self.button5 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button5))
         self.button5.grid(row=4, column=1)
 
+        self.button_mapping[self.button5] = 5
+
         self.button6 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button6))
         self.button6.grid(row=4, column=2)
+
+        self.button_mapping[self.button6] = 6
 
         self.button7 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button7))
         self.button7.grid(row=5, column=0)
 
+        self.button_mapping[self.button7] = 7
+
         self.button8 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button8))
         self.button8.grid(row=5, column=1)
 
+        self.button_mapping[self.button8] = 8
+
         self.button9 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
                               command=lambda: self.btnClick(self.button9))
         self.button9.grid(row=5, column=2)
+
+        self.button_mapping[self.button9] = 9
 
     def create_game_room_server(self):
         response = self.main_server.create_room_func()
@@ -141,7 +162,7 @@ class GameGui(threading.Thread):
         game_room_server_name = "game_room_server_{}".format(code)
 
         self.game_room_server = self.connect_to_server(game_room_server_name)
-        response = self.game_room_server.connect(self.identifier, self.TYPE_PLAYER)
+        response = self.game_room_server.connect({'identifier': self.identifier}, self.TYPE_PLAYER)
         print(response)
         if response['status'] == 'ok':
             self.role = response['data']['participant_type']
@@ -150,12 +171,13 @@ class GameGui(threading.Thread):
             self.init_game_screen()
             tkinter.messagebox.showinfo("Tic-Tac-Toe", response['message'])
 
-    # def btnClick(self, buttons):
-    #     print(buttons['text'])
-    #     if buttons["text"] != '':
-    #         tkinter.messagebox.showinfo("Tic-Tac-Toe", "Button already Clicked!")
-    #     else:
-    #
+    def btnClick(self, buttons):
+        location = self.button_mapping[buttons] - 1
+        player_type = self.role
+
+        response = self.game_room_server.make_a_move(location, player_type)
+        print(response)
+
 
     def checkForWin(self):
         if (self.button1['text'] == 'X' and self.button2['text'] == 'X' and self.button3['text'] == 'X' or
@@ -192,11 +214,26 @@ class GameGui(threading.Thread):
 
     @Pyro4.expose
     def update_positions(self, request):
-        print(request)
+        # TODO:
+        # for idx, position in enumerate(request):
+        #     btn_val = ''
+        #     if position == self.TYPE_PLAYER_O:
+        #         btn_val = 'O'
+        #     elif position == self.TYPE_PLAYER_X:
+        #         btn_val = 'X'
+        #     print(btn_val)
+        # self.button1.config(text="ahaha")
+        # return "ok"
+        # print(len(self.button_mapping))
+            # if btn_val != '':
+            #     for button, number in self.button_mapping.items():
+            #         print(button)
 
     @Pyro4.expose
     def update_list_of_game_rooms(self, request):
         print(request)
+
+
 
     def connect_to_server(self, name):
         try:
@@ -219,17 +256,18 @@ def start_with_ns(gui_server):
         daemon.requestLoop()
     print('\nexited..')
 
+if __name__ == "__main__":
 
-master = tkinter.Tk()
+    master = tkinter.Tk()
 
-app = GameGui(master)
-print(app.identifier)
+    app = GameGui(master)
+    print(app.identifier)
 
-t = threading.Thread(target=start_with_ns, args=(app,))
-t.daemon = True
-t.start()
+    t = threading.Thread(target=start_with_ns, args=(app,))
+    t.daemon = True
+    t.start()
 
-app.start()
+    app.start()
 
 
-master.mainloop()
+    master.mainloop()
