@@ -4,16 +4,6 @@ sys.path.insert(1, '/home/andika/Documents/learn/python/tictactoe/server')
 from server.main_server_controller import MainServerController
 import Pyro4
 
-
-def get_global_server(name = "globalserver"):
-    try:
-        uri = "PYRONAME:{}@localhost:1337".format(name)
-        gserver = Pyro4.Proxy(uri)
-        return gserver
-    except:
-        sys.exit(0)
-
-
 def start_with_ns():
     __host = "localhost"
     __port = 1337

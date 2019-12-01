@@ -5,6 +5,7 @@ from tkinter import messagebox
 
 import Pyro4
 import shortuuid
+import re
 from Pyro4.errors import CommunicationError
 
 
@@ -33,6 +34,8 @@ class GameGui(threading.Thread):
 
         self.identifier = shortuuid.uuid()
         self.role = None
+
+        self.button_mapping = {}
 
         label = Label(self.master, text="Tic Tac Toe", font='Times 20 bold', bg='white', fg='black')
         label.grid(row=1, column=0, columnspan=8)
@@ -139,6 +142,7 @@ class GameGui(threading.Thread):
     def create_game_room_server(self):
         response = self.main_server.create_room_func()
         rooms_response = self.main_server.available_rooms_func()
+        print(rooms_response)
         self.render_list_of_game_rooms(rooms_response['data'])
 
         if response['status'] == 'ok':
@@ -217,11 +221,27 @@ class GameGui(threading.Thread):
 
     @Pyro4.expose
     def update_positions(self, request):
-        print(request)
+        print('todo function')
+        # TODO:
+        # for idx, position in enumerate(request):
+        #     btn_val = ''
+        #     if position == self.TYPE_PLAYER_O:
+        #         btn_val = 'O'
+        #     elif position == self.TYPE_PLAYER_X:
+        #         btn_val = 'X'
+        #     print(btn_val)
+        # self.button1.config(text="ahaha")
+        # return "ok"
+        # print(len(self.button_mapping))
+            # if btn_val != '':
+            #     for button, number in self.button_mapping.items():
+            #         print(button)
 
     @Pyro4.expose
     def update_list_of_game_rooms(self, request):
         print(request)
+
+
 
     def connect_to_server(self, name):
         try:
@@ -244,17 +264,18 @@ def start_with_ns(gui_server):
         daemon.requestLoop()
     print('\nexited..')
 
+if __name__ == "__main__":
 
-master = tkinter.Tk()
+    master = tkinter.Tk()
 
-app = GameGui(master)
-print(app.identifier)
+    app = GameGui(master)
+    print(app.identifier)
 
-t = threading.Thread(target=start_with_ns, args=(app,))
-t.daemon = True
-t.start()
+    t = threading.Thread(target=start_with_ns, args=(app,))
+    t.daemon = True
+    t.start()
 
-app.start()
+    app.start()
 
 
-master.mainloop()
+    master.mainloop()

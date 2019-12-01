@@ -1,8 +1,8 @@
 import Pyro4
+import queue
 from threading import Lock, Thread
 
 # TODO:
-# 1. contact main server once initialized
 # 2. propagate data to connected users
 from Pyro4.errors import CommunicationError
 
@@ -30,9 +30,18 @@ class GameRoomController:
 
         self.player_turn = self.TYPE_PLAYER_X
 
+        self.positions_to_update = queue.Queue()
+
         self.lock = Lock()
 
         print("Game controller is initialised!")
+
+    def connect_to_server(self, name):
+        try:
+            uri = "PYRONAME:{}@localhost:1337".format(name)
+            return Pyro4.Proxy(uri)
+        except CommunicationError as e:
+            print(e)
 
     def connect(self, participant, join_type):
         player_type = None
@@ -76,7 +85,9 @@ class GameRoomController:
         print('players: ', self.players)
         print('spectators: ', self.spectators)
 
-        # TODO: save participant pyro4 connection obj
+        participant_connection = self.connect_to_server("gui_server_{}".format(participant['identifier']))
+        print(participant_connection)
+        self.participant_connections.append(participant_connection)
 
         return {
             'status': 'ok',
@@ -88,7 +99,16 @@ class GameRoomController:
         }
 
     def make_a_move(self, location, player_type):
-        if self.game_positions[location] is not None:
+        if player_type not in [self.TYPE_PLAYER_X, self.TYPE_PLAYER_O]:
+            return {
+                'status': 'error',
+                'message': 'only player_type player can move',
+                'data': {
+                    'winner': None,
+                    'positions': self.game_positions
+                }
+            }
+        elif self.game_positions[location] is not None:
             return {
                 'status': 'error',
                 'message': 'position is not empty',
@@ -101,7 +121,10 @@ class GameRoomController:
         self.lock.acquire()
         self.game_positions[location] = player_type
         response = self.check_winner()
+        self.positions_to_update.put(self.game_positions)
+        self.update_positions()
         self.lock.release()
+
         print('game positions: ', self.game_positions)
 
         return {
@@ -118,7 +141,7 @@ class GameRoomController:
         # Check horizontal
         if self.game_positions[0] == self.game_positions[1] == self.game_positions[2] is not None \
                 or self.game_positions[3] == self.game_positions[4] == self.game_positions[5] is not None \
-                or  self.game_positions[6] == self.game_positions[7] == self.game_positions[8] is not None:
+                or self.game_positions[6] == self.game_positions[7] == self.game_positions[8] is not None:
             return "a winner is found"
         # Check vertical
         elif self.game_positions[0] == self.game_positions[3] == self.game_positions[6] is not None \
@@ -137,10 +160,9 @@ class GameRoomController:
         }
 
     def update_positions(self):
+        position = self.positions_to_update.get()
         for participant in self.participant_connections:
             try:
-                participant.update_positions(self.game_positions)
+                participant.update_positions(position)
             except CommunicationError as e:
-                print(e.message)
-            except Exception as e:
                 print(e.message)

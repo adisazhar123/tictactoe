@@ -8,6 +8,13 @@ import time
 from game.game_room_controller import GameRoomController
 from threading import Lock
 import threading
+import logging
+
+logging.basicConfig(filename='MainServerController.log',
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 
 
 class MainServerController(object):
@@ -16,19 +23,46 @@ class MainServerController(object):
         self.available_rooms = []
         self.lock = Lock()
 
+        self.threads = []
+
+    @Pyro4.expose
+    def check_connection(self) -> str:
+        return 'ok'
+
+    @Pyro4.expose
+    def ping_interval(self) -> int:
+        return 3
+
     @Pyro4.expose
     def create_room_func(self) -> dict:
-        self.lock.acquire()
-        identity = shortuuid.random(length=4)
-        t = threading.Thread(target=self.__create_room, args=(identity,))
-        t.daemon = True
-        t.start()
-        self.lock.release()
-        self.available_rooms.append({
-            'id': identity,
-            'created_at': time.time()
-        })
-        print('room created')
+        try:
+            self.lock.acquire()
+            identity = shortuuid.random(length=4)
+            logging.info('creating thread for room {}'.format(identity))
+            t = threading.Thread(target=self.__create_room, args=(identity,))
+            t.daemon = True
+            t.start()
+            logging.info('successfully create thread for room {}'.format(identity))
+            # todo: feature to autoremove rooms if status not used
+            timestamp = time.time()
+            self.available_rooms.append({
+                'id': identity,
+                'status': 'active',
+                'last_used': timestamp,
+                'created_at': timestamp,
+            })
+            self.threads.append({
+                'id': identity,
+                'thread': t
+            })
+            self.lock.release()
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': e.message,
+                'data': None
+            }
+
         return {
             'status': 'ok',
             'message': 'game room succesfully created',
@@ -37,7 +71,7 @@ class MainServerController(object):
 
     @Pyro4.expose
     def available_rooms_func(self) -> dict:
-        print('list of available rooms')
+        logging.info('available_rooms_func')
         return {
             'status': 'ok',
             'message': 'list of game rooms',
