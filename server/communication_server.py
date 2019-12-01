@@ -1,7 +1,7 @@
 import os, sys
 sys.path.insert(1, '/home/andika/Documents/learn/python/tictactoe/server')
 
-from communication_server_controller import CommunicationServerController
+from server.communication_server_controller import CommunicationServerController
 import Pyro4
 
 def start_with_ns():
