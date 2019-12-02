@@ -5,10 +5,9 @@ from tkinter import messagebox
 
 import Pyro4
 import shortuuid
-import time
-import os, sys
-import re
 from Pyro4.errors import CommunicationError, ConnectionClosedError
+import os, sys
+import time
 
 
 class GameGui(threading.Thread):
@@ -184,6 +183,9 @@ class GameGui(threading.Thread):
             self.turn = response['data']['turn']
 
             self.init_game_screen()
+
+            if response['data']['participant_type'] not in [self.TYPE_PLAYER_X, self.TYPE_PLAYER_O]:
+                self.game_room_server.update_positions()
             tkinter.messagebox.showinfo("Tic-Tac-Toe", response['message'])
 
     def btnClick(self, buttons):

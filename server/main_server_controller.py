@@ -5,7 +5,7 @@ import Pyro4
 import Pyro4.errors
 import shortuuid
 import time
-from game_room_controller import GameRoomController
+from game.game_room_controller import GameRoomController
 from threading import Lock
 import threading
 import logging
