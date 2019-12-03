@@ -66,6 +66,7 @@ class GameRoomController:
                 'info': participant
             }
             self.spectators.append(spec)
+            self.positions_to_update.put(self.game_positions)
             player_type = 'spectator:{}'.format(len(self.spectators))
             message = 'joined as spectator'
         elif join_type == self.TYPE_PLAYER:
