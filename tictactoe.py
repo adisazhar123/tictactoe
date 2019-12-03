@@ -18,7 +18,10 @@ class GameGui(threading.Thread):
         self.interval = 1
         self.player_a_name = StringVar()
         self.player_b_name = StringVar()
+        self.player_name = StringVar()
+        self.type = StringVar()
 
+        self.dark_color = '#000000'
         self.communication_server = self.connect_to_server('communication_server')
         self.game_room_server = None
 
@@ -41,7 +44,7 @@ class GameGui(threading.Thread):
 
         self.button_mapping = {}
 
-        label = Label(self.master, text="Tic Tac Toe", font='Times 20 bold', bg='white', fg='black')
+        label = Label(self.master, text="Tic Tac Toe", font='Times 15 bold', fg='#ffffff', bg=self.dark_color)
         label.grid(row=1, column=0, columnspan=8)
 
         self.buttons = StringVar()
@@ -53,13 +56,14 @@ class GameGui(threading.Thread):
         self.positions = [None] * 9
 
     def init_list_of_game_rooms(self):
-        self.game_rooms_available_label = Label(self.master, text="Game rooms available", font='Times 20', fg='black')
+        self.dark_background_master()
+        self.game_rooms_available_label = Label(self.master, text="Game rooms available", font='Times 15', fg='#ffffff', bg=self.dark_color)
         self.game_rooms_available_label.grid(row=2, column=0)
 
-        self.button_create_game_room = Button(self.master, text="Create game room", font='Times 20', bg='gray', fg='white', command=lambda: self.create_game_room_server())
+        self.button_create_game_room = Button(self.master, text="Create game room", font='Times 15 bold', bg='#66B2FF', fg='#ffffff', command=lambda: self.create_game_room_server())
         self.button_create_game_room.grid(row=4, column=0)
 
-        self.list_box = tkinter.Listbox(self.master, width=20, font='Times 24')
+        self.list_box = tkinter.Listbox(self.master, font='Times 20', bg='#121212', fg='#FFFFFF')
         self.list_box.grid(row=3, column=0)
         self.list_box.bind('<Double-1>', self.list_box_double_click_handler)
 
@@ -78,74 +82,113 @@ class GameGui(threading.Thread):
         label = Label(self.master, text="Player 2:", font='Times 20 bold', bg='white', fg='black', height=1, width=8)
         label.grid(row=2, column=0)
 
-        self.player1_name_entry = Entry(self.master, textvariable=self.player_a_name, bd=5)
+        self.player1_name_entry = Entry(self.master, textvariable="wuaa", bd=5)
         self.player1_name_entry.grid(row=1, column=1, columnspan=8)
-        self.player2_name_entry = Entry(self.master, textvariable=self.player_b_name, bd=5)
+        self.player2_name_entry = Entry(self.master, textvariable="kaka", bd=5)
         self.player2_name_entry.grid(row=2, column=1, columnspan=8)
 
     def init_game_screen(self):
+        self.init_game_buttons()
+        self.init_game_positions()
+
+    def init_name_form_screen(self, game_room_server_name):
+        self.init_form_layout(game_room_server_name)
+
+    def init_form_player_screen(self, game_room_server_name):
         self.list_box.destroy()
         self.button_create_game_room.destroy()
         self.game_rooms_available_label.destroy()
 
-        # self.init_player_labels()
-        self.init_game_buttons()
-        self.init_game_positions()
+        self.connect_to_game_room(game_room_server_name)
+
+    def init_form_layout(self, game_room_server_name):
+        self.room_name = Label(self.master, pady=20, text="You are entering room {}".format(game_room_server_name.replace('game_room_server_', '')), font='Times 15', fg='#ffffff', bg=self.dark_color)
+        self.room_name.grid(row=2, column=0)
+
+        self.label_name = Label(self.master, text="Enter Your Name", font='Times 12', fg='#ffffff', bg=self.dark_color)
+        self.label_name.grid(row=3, column=0)
+
+        self.name_input = Entry(self.master, textvariable="name")
+        self.name_input.grid(row=4, column=0, columnspan=8)
+
+        self.button_join_room = Button(self.master, text="Join Room", font='Times 15 bold', bg='#66B2FF', fg='#ffffff', command=lambda: self.join_room_server(self.name_input.get()))
+        self.button_join_room.grid(row=5, column=0, pady=20)
+
+    def join_room_server(self, name):
+        self.room_name.destroy()
+        self.label_name.destroy()
+        self.name_input.destroy()
+        self.button_join_room.destroy()
+
+        self.player_name=name
+        self.init_game_screen()
+        tkinter.messagebox.showinfo("Tic-Tac-Toe", "Welcome {}".format(name))
 
     def init_game_buttons(self):
-        self.button1 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button1 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button1))
         self.button1.grid(row=3, column=0)
 
         self.button_mapping[self.button1] = 1
 
-        self.button2 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button2 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button2))
         self.button2.grid(row=3, column=1)
 
         self.button_mapping[self.button2] = 2
 
-        self.button3 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button3 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button3))
         self.button3.grid(row=3, column=2)
 
         self.button_mapping[self.button3] = 3
 
-        self.button4 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button4 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button4))
         self.button4.grid(row=4, column=0)
 
         self.button_mapping[self.button4] = 4
 
-        self.button5 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button5 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button5))
         self.button5.grid(row=4, column=1)
 
         self.button_mapping[self.button5] = 5
 
-        self.button6 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button6 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button6))
         self.button6.grid(row=4, column=2)
 
         self.button_mapping[self.button6] = 6
 
-        self.button7 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button7 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button7))
         self.button7.grid(row=5, column=0)
 
         self.button_mapping[self.button7] = 7
 
-        self.button8 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button8 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button8))
         self.button8.grid(row=5, column=1)
 
         self.button_mapping[self.button8] = 8
 
-        self.button9 = Button(self.master, text='', font='Times 20 bold', bg='gray', fg='white', height=4, width=8,
+        self.button9 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button9))
         self.button9.grid(row=5, column=2)
 
         self.button_mapping[self.button9] = 9
+
+        if self.role in [self.TYPE_PLAYER_O, self.TYPE_PLAYER_X]:
+            self.name_label_game = Label(self.master, text=self.player_name, font='Times 15', fg='#ffffff', bg=self.dark_color)
+            self.name_label_game.grid(row=6, column=1)
+            role_game = self.role.replace('player:', '')
+            size = '50'
+        else:
+            role_game = 'SPECTATOR'
+            size = '15'
+        self.role_label_game = Label(self.master, text=role_game, font='Times {}'.format(size), fg='#ffffff', bg=self.dark_color)
+        self.role_label_game.grid(row=7, column=1)
 
     def create_game_room_server(self):
         response = self.communication_server.create_room_command()
@@ -154,6 +197,9 @@ class GameGui(threading.Thread):
 
         if response['status'] == 'ok':
             tkinter.messagebox.showinfo("Tic-Tac-Toe", response['message'])
+
+    def dark_background_master(self):
+        self.master.configure(background = self.dark_color)
 
     def disableButton(self):
         self.button1.configure(state=DISABLED)
@@ -170,7 +216,7 @@ class GameGui(threading.Thread):
         selected = self.list_box.get(self.list_box.curselection())
         code = selected.split(' ')[1]
         game_room_server_name = "game_room_server_{}".format(code)
-        self.connect_to_game_room(game_room_server_name)
+        self.init_form_player_screen(game_room_server_name)
 
     def connect_to_game_room(self, game_room_server_name):
         self.game_room_server = self.connect_to_server(game_room_server_name)
@@ -182,6 +228,9 @@ class GameGui(threading.Thread):
             self.role = response['data']['participant_type']
             self.positions = response['data']['positions']
             self.turn = response['data']['turn']
+            if self.role == 'player:x' or self.role == 'player:o':
+                self.init_name_form_screen(game_room_server_name)
+                return
 
             self.init_game_screen()
             tkinter.messagebox.showinfo("Tic-Tac-Toe", response['message'])
@@ -190,7 +239,11 @@ class GameGui(threading.Thread):
         if buttons["text"] != '':
             tkinter.messagebox.showinfo("Tic-Tac-Toe", "Button already Clicked!")
         elif self.role != self.turn:
-            tkinter.messagebox.showinfo("Tic-Tac-Toe", "Not your turn")
+            if self.role in [self.TYPE_PLAYER_O, self.TYPE_PLAYER_X]:
+                msg = 'Not your turn'
+            else:
+                msg = 'You are spectator'
+            tkinter.messagebox.showinfo("Tic-Tac-Toe", msg)
         else:
             location = self.button_mapping[buttons] - 1
             player_type = self.role

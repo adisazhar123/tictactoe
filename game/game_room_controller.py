@@ -92,6 +92,7 @@ class GameRoomController:
         return {
             'status': 'ok',
             'message': message,
+            'total_player': len(self.players),
             'data': {
                 'participant_type': player_type,
                 'positions': self.game_positions,
