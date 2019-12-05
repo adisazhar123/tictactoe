@@ -190,7 +190,7 @@ class GameGui(threading.Thread):
         self.role_label_game.grid(row=7, column=1)
 
     def create_game_room_server(self):
-        response = self.communication_server.create_room_command()
+        response = self.communication_server.create_room_command(self.identifier)
         rooms_response = self.communication_server.available_rooms_command()
         self.render_list_of_game_rooms(rooms_response['data'])
 
@@ -341,9 +341,7 @@ class GameGui(threading.Thread):
 
     @Pyro4.expose
     def update_list_of_game_rooms(self, request):
-        print(request)
-
-
+        self.render_list_of_game_rooms(request['data'])
 
     def connect_to_server(self, name):
         try:
@@ -373,18 +371,24 @@ if __name__ == "__main__":
 
     app = GameGui(master)
     try:
+        t = threading.Thread(target=start_with_ns, args=(app,))
+        t.daemon = True
+        t.start()
+    except:
+        print('failed to start gui client server')
+        sys.exit(0)
+
+    try:
         app.interval = app.communication_server.ping_interval()
+        res = app.communication_server.register_command(app.identifier)
         app.communication_server._pyroTimeout = app.interval
+        print(res)
         tpa = app.job_ping_server_ping_ack()
     except:
         print('failed to connect with communication server')
         sys.exit(0)
 
     print(app.identifier)
-
-    t = threading.Thread(target=start_with_ns, args=(app,))
-    t.daemon = True
-    t.start()
 
     app.start()
 

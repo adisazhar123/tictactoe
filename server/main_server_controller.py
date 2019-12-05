@@ -21,6 +21,7 @@ class MainServerController(object):
     def __init__(self):
         self.config = {'host': 'localhost', 'port': 1337}
         self.available_rooms = []
+        self.registered_client = set()
         self.lock = Lock()
         self.threads = []
 
@@ -75,6 +76,16 @@ class MainServerController(object):
             'status': 'ok',
             'message': 'list of game rooms',
             'data': self.available_rooms
+        }
+
+    @Pyro4.expose
+    def register_func(self, identifier):
+        self.registered_client.add(identifier)
+        logging.info('added client {}'.format(identifier))
+        return {
+            'status': 'ok',
+            'message': 'register client',
+            'data': self.registered_client
         }
 
     def __create_room(self, identity):

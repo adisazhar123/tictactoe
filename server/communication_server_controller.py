@@ -14,7 +14,9 @@ logging.basicConfig(filename='CommunicationServerController.log',
 
 class CommunicationServerController(object):
     def __init__(self):
-        self.main_server_connection = self.__connect_main_server()
+        self.main_server_connection = self.__connect_server('main_server')
+        self.registered_client = set()
+        self.registered_client_connections = []
         try:
             interval = self.main_server_connection.ping_interval()
         except:
@@ -29,17 +31,32 @@ class CommunicationServerController(object):
         return 3
 
     @Pyro4.expose
-    def create_room_command(self):
-        return self.main_server_connection.create_room_func()
+    def create_room_command(self, identifier):
+        response = self.main_server_connection.create_room_func()
+        available_rooms = self.available_rooms_command()
+        for connections in self.registered_client_connections:
+            # print(connections['identifier'])
+            if connections['identifier'] == identifier:
+                continue
+            connections['connection'].update_list_of_game_rooms(available_rooms)
+        return response
 
     @Pyro4.expose
     def available_rooms_command(self):
         return self.main_server_connection.available_rooms_func()
 
-    def __connect_main_server(self):
+    @Pyro4.expose
+    def register_command(self, identifier):
+        if identifier in self.registered_client:
+            return None
+        self.registered_client_connections.append({'identifier' : identifier, 'connection' : self.__connect_server('gui_server_{}'.format(identifier))})
+        self.registered_client.add(identifier)
+        return self.main_server_connection.register_func(identifier)
+
+    def __connect_server(self, name):
         try:
-            uri = "PYRONAME:main_server@localhost:1337"
+            uri = "PYRONAME:{}@localhost:1337".format(name)
             return Pyro4.Proxy(uri)
         except CommunicationError as e:
-            logging.error('failed to get main_server: {}'.format(e))
+            logging.error('failed to get {}: {}'.format(name, e))
             return None
