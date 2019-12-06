@@ -4,6 +4,8 @@ sys.path.insert(1, '/home/andika/Documents/learn/python/tictactoe/game')
 import Pyro4
 from Pyro4.errors import CommunicationError
 import logging
+import threading
+import time
 
 logging.basicConfig(filename='CommunicationServerController.log',
                     filemode='a',
@@ -19,6 +21,8 @@ class CommunicationServerController(object):
         self.registered_client_connections = []
         try:
             interval = self.main_server_connection.ping_interval()
+            self.main_server_connection._pyroTimeout = interval
+            tpa = self.job_ping_server_ping_ack()
         except:
             raise ValueError('could not initiate CommunicationServerController')
 
@@ -34,16 +38,25 @@ class CommunicationServerController(object):
     def create_room_command(self, identifier):
         response = self.main_server_connection.create_room_func()
         available_rooms = self.available_rooms_command()
-        for connections in self.registered_client_connections:
+        for idx, connections in enumerate(self.registered_client_connections):
             # print(connections['identifier'])
             if connections['identifier'] == identifier:
                 continue
-            connections['connection'].update_list_of_game_rooms(available_rooms)
+            try:
+                connections['connection'].update_list_of_game_rooms(available_rooms)
+            except CommunicationError as e: 
+                logging.error('failed to connect to client {}: {}'.format(connections['identifier'], e))
+                self.registered_client.remove(connections['identifier'])
+                self.main_server_connection.unregister_func(connections['identifier'])
         return response
 
     @Pyro4.expose
     def available_rooms_command(self):
         return self.main_server_connection.available_rooms_func()
+
+    @Pyro4.expose
+    def delete_room_command(self, identifier):
+        return self.main_server_connection.delete_room_func(identifier)
 
     @Pyro4.expose
     def register_command(self, identifier):
@@ -60,3 +73,36 @@ class CommunicationServerController(object):
         except CommunicationError as e:
             logging.error('failed to get {}: {}'.format(name, e))
             return None
+
+    def gracefully_exits(self):
+        print("disconnecting..")
+        time.sleep(0.5)
+        try:
+            sys.exit(0)
+        except SystemExit:
+            os._exit(0)
+
+    def communicate(self) -> bool:
+        try:
+            res = self.main_server_connection.check_connection()
+            if res == 'ok':
+                pass
+        except:
+            return False
+        return True
+
+    def job_ping_server_ping_ack(self) -> threading.Thread:
+        t = threading.Thread(target=self.ping_server)
+        t.start()
+        return t
+
+    def ping_server(self):
+        while True:
+            alive = self.communicate()
+            if not alive:
+                alive = self.communicate()
+                if not alive:
+                    print("\nmain server is down [DETECT BY ping ack]\n")
+                    break
+            time.sleep(self.ping_interval())
+        self.gracefully_exits()

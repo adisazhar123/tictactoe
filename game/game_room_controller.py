@@ -139,7 +139,8 @@ class GameRoomController:
         self.positions_to_update.put(self.game_positions)
         self.change_player_turn()
         self.update_positions()
-
+        if response is not None:
+            self.announce_winner(response)
         self.lock.release()
 
         return {
@@ -161,19 +162,27 @@ class GameRoomController:
     def check_winner(self):
         # Todo return which player won
         # Check horizontal
-        if self.game_positions[0] == self.game_positions[1] == self.game_positions[2] is not None \
-                or self.game_positions[3] == self.game_positions[4] == self.game_positions[5] is not None \
-                or self.game_positions[6] == self.game_positions[7] == self.game_positions[8] is not None:
-            return "a winner is found"
+        if self.game_positions[0] == self.game_positions[1] == self.game_positions[2] is not None:
+            return self.game_positions[0]
+        elif self.game_positions[3] == self.game_positions[4] == self.game_positions[5] is not None:
+            return self.game_positions[3]
+        elif self.game_positions[6] == self.game_positions[7] == self.game_positions[8] is not None:
+            return self.game_positions[6]
+
         # Check vertical
-        elif self.game_positions[0] == self.game_positions[3] == self.game_positions[6] is not None \
-                or self.game_positions[1] == self.game_positions[4] == self.game_positions[7] is not None \
-                or self.game_positions[2] == self.game_positions[5] == self.game_positions[8] is not None:
-            return "a winner is found"
+        elif self.game_positions[0] == self.game_positions[3] == self.game_positions[6] is not None:
+            return self.game_positions[0]
+        elif self.game_positions[1] == self.game_positions[4] == self.game_positions[7] is not None:
+            return self.game_positions[1]
+        elif self.game_positions[2] == self.game_positions[5] == self.game_positions[8] is not None:
+            return self.game_positions[2]
+
         # Check horizontal
-        elif self.game_positions[0] == self.game_positions[4] == self.game_positions[8] is not None \
-                or self.game_positions[2] == self.game_positions[4] == self.game_positions[6] is not None:
-            return "a winner is found"
+        elif self.game_positions[0] == self.game_positions[4] == self.game_positions[8] is not None:
+            return self.game_positions[0]
+        elif self.game_positions[2] == self.game_positions[4] == self.game_positions[6] is not None:
+            return self.game_positions[2]
+
         return None
 
     def ping(self):
@@ -187,4 +196,11 @@ class GameRoomController:
             try:
                 participant.update_positions(position, self.player_turn)
             except CommunicationError as e:
-                print(e.message)
+                print(e)
+
+    def announce_winner(self, winner):
+        for participant in self.participant_connections:
+            try:
+                participant.get_the_winner(winner)
+            except CommunicationError as e:
+                print(e)

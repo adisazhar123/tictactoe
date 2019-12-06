@@ -15,6 +15,7 @@ class GameGui(threading.Thread):
         threading.Thread.__init__(self)
         self.master = master
         self.interval = 1
+        self.winner = ''
         self.player_a_name = StringVar()
         self.player_b_name = StringVar()
         self.player_name = StringVar()
@@ -252,6 +253,9 @@ class GameGui(threading.Thread):
 
             response = self.game_room_server.make_a_move(location, player_type)
             self.turn = response['data']['turn']
+            if response['data']['winner'] is not None:
+                self.winner = response['data']['winner']
+                # self.game_room_server.announce_winner(self.winner)
             print(response)
 
     def checkForWin(self):
@@ -325,7 +329,21 @@ class GameGui(threading.Thread):
             time.sleep(self.interval)
         self.gracefully_exits()
 
-    # TODO:
+
+    def __dialog_box_popup(self, msg):
+        tkinter.messagebox.showinfo("Tic-Tac-Toe", msg)
+
+    @Pyro4.expose
+    def get_the_winner(self, winner):
+        print('winner:{}'.format(winner))
+        if winner == self.role:
+            msg = 'You Win'
+        else:
+            msg = 'You Lose'
+        if self.role == self.TYPE_SPECTATOR:
+            msg = 'Player {} Win'.format(winner.replace('player:', ''))
+        threading.Thread(target=self.__dialog_box_popup, args=(msg,), daemon=True).start()
+
     @Pyro4.expose
     def update_positions(self, request, turn):
         for idx, position in enumerate(request):

@@ -79,12 +79,33 @@ class MainServerController(object):
         }
 
     @Pyro4.expose
+    def delete_room_func(self, identifier):
+        # TODO: 
+        # delete from available rooms 
+        logging.info('delete room {}'.format(identifier))
+        return {
+            'status': 'ok',
+            'message': 'delete room',
+            'data': self.available_rooms_func()['data']
+        }
+
+    @Pyro4.expose
     def register_func(self, identifier):
         self.registered_client.add(identifier)
         logging.info('added client {}'.format(identifier))
         return {
             'status': 'ok',
             'message': 'register client',
+            'data': self.registered_client
+        }
+
+    @Pyro4.expose
+    def unregister_func(self, identifier):
+        self.registered_client.remove(identifier)
+        logging.info('removed client {}'.format(identifier))
+        return {
+            'status': 'ok',
+            'message': 'unregister client',
             'data': self.registered_client
         }
 
