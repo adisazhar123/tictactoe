@@ -54,7 +54,7 @@ class GameRoomController:
             message = 'command join_type not recognised'
             self.lock.release()
             return {
-                'status': 'ok',
+                'status': 'error',
                 'message': message,
                 'data': {
                     'participant_type': player_type,

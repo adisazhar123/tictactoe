@@ -96,6 +96,18 @@ class GameGui():
         self.init_game_buttons()
         self.init_game_positions()
 
+    def init_game_player_labels(self):
+        if self.role in [self.TYPE_PLAYER_O, self.TYPE_PLAYER_X]:
+            self.name_label_game = Label(self.master, text=self.player_name, font='Times 15', fg='#ffffff', bg=self.dark_color)
+            self.name_label_game.grid(row=6, column=1)
+            role_game = self.role.replace('player:', '')
+            size = '50'
+        else:
+            role_game = 'SPECTATOR'
+            size = '15'
+        self.role_label_game = Label(self.master, text=role_game, font='Times {}'.format(size), fg='#ffffff', bg=self.dark_color)
+        self.role_label_game.grid(row=7, column=1)
+
     def init_name_form_screen(self, game_room_server_name):
         self.init_form_layout(game_room_server_name)
 
@@ -125,14 +137,10 @@ class GameGui():
         # self.connect_to_game_room(game_room_server_name)
 
     def join_room_server(self, username, game_room_server_name):
-        # self.room_name.destroy()
-        # self.label_name.destroy()
-        # self.name_input.destroy()
-        # self.button_join_room.destroy()
-
         self.player_name = username
         self.init_game_screen()
         self.connect_to_game_room(game_room_server_name, username)
+        self.init_game_player_labels()
         tkinter.messagebox.showinfo("Tic-Tac-Toe", "Welcome {}".format(username))
 
     def reset_widgets(self):
@@ -221,17 +229,6 @@ class GameGui():
         self.button9.grid(row=5, column=2)
 
         self.button_mapping[self.button9] = 9
-
-        if self.role in [self.TYPE_PLAYER_O, self.TYPE_PLAYER_X]:
-            self.name_label_game = Label(self.master, text=self.player_name, font='Times 15', fg='#ffffff', bg=self.dark_color)
-            self.name_label_game.grid(row=6, column=1)
-            role_game = self.role.replace('player:', '')
-            size = '50'
-        else:
-            role_game = 'SPECTATOR'
-            size = '15'
-        self.role_label_game = Label(self.master, text=role_game, font='Times {}'.format(size), fg='#ffffff', bg=self.dark_color)
-        self.role_label_game.grid(row=7, column=1)
 
     def create_game_room_server(self):
         response = self.communication_server.create_room_command(self.identifier)
@@ -376,7 +373,6 @@ class GameGui():
     def _update_positions(self, request, turn):
         print('starting')
         for idx, position in enumerate(request):
-            print(idx)
             btn_val = ''
             if position == self.TYPE_PLAYER_O:
                 btn_val = 'O'
