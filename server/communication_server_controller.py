@@ -38,6 +38,7 @@ class CommunicationServerController(object):
     def create_room_command(self, identifier):
         response = self.main_server_connection.create_room_func()
         available_rooms = self.available_rooms_command()
+        to_remove = []
         for idx, connections in enumerate(self.registered_client_connections):
             # print(connections['identifier'])
             if connections['identifier'] == identifier:
@@ -48,6 +49,11 @@ class CommunicationServerController(object):
                 logging.error('failed to connect to client {}: {}'.format(connections['identifier'], e))
                 self.registered_client.remove(connections['identifier'])
                 self.main_server_connection.unregister_func(connections['identifier'])
+                to_remove.append(connections)
+
+        for conn in to_remove:
+            self.registered_client_connections.remove(conn)
+
         return response
 
     @Pyro4.expose
@@ -65,6 +71,10 @@ class CommunicationServerController(object):
         self.registered_client_connections.append({'identifier' : identifier, 'connection' : self.__connect_server('gui_server_{}'.format(identifier))})
         self.registered_client.add(identifier)
         return self.main_server_connection.register_func(identifier)
+
+    @Pyro4.expose
+    def game_ended(self, identifier):
+        return self.main_server_connection.delete_room_func(identifier)
 
     def __connect_server(self, name):
         try:

@@ -80,8 +80,14 @@ class MainServerController(object):
 
     @Pyro4.expose
     def delete_room_func(self, identifier):
-        # TODO: 
-        # delete from available rooms 
+        self.lock.acquire()
+        _room = None
+        for room in self.available_rooms:
+            if room['id'] == identifier:
+                _room = room
+                break
+        self.available_rooms.remove(_room)
+        self.lock.release()
         logging.info('delete room {}'.format(identifier))
         return {
             'status': 'ok',
@@ -108,6 +114,12 @@ class MainServerController(object):
             'message': 'unregister client',
             'data': self.registered_client
         }
+
+    # def game_ended(self, identifier):
+    #     found = 0
+    #     for room in self.available_rooms:
+    #         if room.id == identifier:
+    #             self.available_rooms
 
     def __create_room(self, identity):
         game_room = GameRoomController(identity)

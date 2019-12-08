@@ -2,8 +2,6 @@ import Pyro4
 import queue
 from threading import Lock, Thread
 
-# TODO:
-# 2. propagate data to connected users
 from Pyro4.errors import CommunicationError
 
 
@@ -27,6 +25,10 @@ class GameRoomController:
         # Init tic tac toe positions
         self.game_positions = [None] * 9
         self.max_players = 2
+
+        self.communication_server = self.connect_to_server("communication_server")
+
+        self.game_ended = 0
 
         self.player_turn = self.TYPE_PLAYER_X
 
@@ -141,6 +143,9 @@ class GameRoomController:
         self.update_positions()
         if response is not None:
             self.announce_winner(response)
+            self.game_ended = 1
+            res = self.communication_server.game_ended(self.game_room_name)
+            print('response for game ended: {}'.format(res))
         self.lock.release()
 
         return {
@@ -160,7 +165,6 @@ class GameRoomController:
             self.player_turn = self.TYPE_PLAYER_X
 
     def check_winner(self):
-        # Todo return which player won
         # Check horizontal
         if self.game_positions[0] == self.game_positions[1] == self.game_positions[2] is not None:
             return self.game_positions[0]

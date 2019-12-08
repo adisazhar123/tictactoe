@@ -10,9 +10,10 @@ import os, sys
 import time
 
 
-class GameGui(threading.Thread):
+# class GameGui(threading.Thread):
+class GameGui():
     def __init__(self, master):
-        threading.Thread.__init__(self)
+        # threading.Thread.__init__(self)
         self.master = master
         self.interval = 1
         self.winner = ''
@@ -25,7 +26,6 @@ class GameGui(threading.Thread):
         self.communication_server = self.connect_to_server('communication_server')
         self.game_room_server = None
 
-        self.b_click = True
         self.flag = 0
 
         # init types
@@ -124,6 +124,40 @@ class GameGui(threading.Thread):
         self.init_game_screen()
         tkinter.messagebox.showinfo("Tic-Tac-Toe", "Welcome {}".format(name))
 
+    def back_to_main_menu(self):
+        self.button1.destroy()
+        self.button2.destroy()
+        self.button3.destroy()
+        self.button4.destroy()
+        self.button5.destroy()
+        self.button6.destroy()
+        self.button7.destroy()
+        self.button8.destroy()
+        self.button9.destroy()
+
+        self.room_name.destroy()
+        self.label_name.destroy()
+        self.name_input.destroy()
+        self.button_join_room.destroy()
+
+        self.name_label_game.destroy()
+        self.role_label_game.destroy()
+
+        self.init_game_positions()
+        self.turn = None
+
+        self.role = None
+
+        self.button_mapping = {}
+
+        label = Label(self.master, text="Tic Tac Toe", font='Times 15 bold', fg='#ffffff', bg=self.dark_color)
+        label.grid(row=1, column=0, columnspan=8)
+
+        self.init_list_of_game_rooms()
+
+        rooms_response = self.communication_server.available_rooms_command()
+        self.render_list_of_game_rooms(rooms_response['data'])
+
     def init_game_buttons(self):
         self.button1 = Button(self.master, text='', font='Times 20 bold', bg='#343a40', fg='#FFFFFF', height=4, width=8,
                               command=lambda: self.btnClick(self.button1))
@@ -191,6 +225,9 @@ class GameGui(threading.Thread):
         self.role_label_game.grid(row=7, column=1)
 
     def create_game_room_server(self):
+        # tkinter.messagebox.showinfo("Tic-Tac-Toe", 'ok')
+        # response = threading.Thread(target=self.communication_server.create_room_command, args=(self.identifier,), daemon=True).start()
+        # print(response)
         response = self.communication_server.create_room_command(self.identifier)
         rooms_response = self.communication_server.available_rooms_command()
         self.render_list_of_game_rooms(rooms_response['data'])
@@ -258,34 +295,6 @@ class GameGui(threading.Thread):
                 # self.game_room_server.announce_winner(self.winner)
             print(response)
 
-    def checkForWin(self):
-        if (self.button1['text'] == 'X' and self.button2['text'] == 'X' and self.button3['text'] == 'X' or
-                self.button4['text'] == 'X' and self.button5['text'] == 'X' and self.button6['text'] == 'X' or
-                self.button7['text'] == 'X' and self.button8['text'] == 'X' and self.button9['text'] == 'X' or
-                self.button1['text'] == 'X' and self.button5['text'] == 'X' and self.button9['text'] == 'X' or
-                self.button3['text'] == 'X' and self.button5['text'] == 'X' and self.button7['text'] == 'X' or
-                self.button1['text'] == 'X' and self.button2['text'] == 'X' and self.button3['text'] == 'X' or
-                self.button1['text'] == 'X' and self.button4['text'] == 'X' and self.button7['text'] == 'X' or
-                self.button2['text'] == 'X' and self.button5['text'] == 'X' and self.button8['text'] == 'X' or
-                self.button7['text'] == 'X' and self.button6['text'] == 'X' and self.button9['text'] == 'X'):
-            self.disableButton()
-            messagebox.showinfo("Tic-Tac-Toe", self.player1_name_entry.get())
-
-        elif self.flag == 8:
-            tkinter.messagebox.showinfo("Tic-Tac-Toe", "It is a Tie")
-
-        elif (self.button1['text'] == 'O' and self.button2['text'] == 'O' and self.button3['text'] == 'O' or
-              self.button4['text'] == 'O' and self.button5['text'] == 'O' and self.button6['text'] == 'O' or
-              self.button7['text'] == 'O' and self.button8['text'] == 'O' and self.button9['text'] == 'O' or
-              self.button1['text'] == 'O' and self.button5['text'] == 'O' and self.button9['text'] == 'O' or
-              self.button3['text'] == 'O' and self.button5['text'] == 'O' and self.button7['text'] == 'O' or
-              self.button1['text'] == 'O' and self.button2['text'] == 'O' and self.button3['text'] == 'O' or
-              self.button1['text'] == 'O' and self.button4['text'] == 'O' and self.button7['text'] == 'O' or
-              self.button2['text'] == 'O' and self.button5['text'] == 'O' and self.button8['text'] == 'O' or
-              self.button7['text'] == 'O' and self.button6['text'] == 'O' and self.button9['text'] == 'O'):
-            self.disableButton()
-            tkinter.messagebox.showinfo("Tic-Tac-Toe", self.player2_name_entry.get())
-
     def render_list_of_game_rooms(self, rooms):
         self.list_box.delete(0, tkinter.END)
         for room in rooms:
@@ -302,7 +311,7 @@ class GameGui(threading.Thread):
         try:
             sys.exit(0)
         except SystemExit:
-            os._exit(0)
+            os.exit(0)
 
     def communicate(self) -> bool:
         try:
@@ -329,9 +338,19 @@ class GameGui(threading.Thread):
             time.sleep(self.interval)
         self.gracefully_exits()
 
-
     def __dialog_box_popup(self, msg):
-        tkinter.messagebox.showinfo("Tic-Tac-Toe", msg)
+        res = tkinter.messagebox.showinfo("Tic-Tac-Toe", msg)
+        if res == 'ok':
+            threading.Thread(target=self.back_to_main_menu, daemon=True).start()
+
+    def all_children(self, window):
+        _list = window.winfo_children()
+
+        for item in _list:
+            if item.winfo_children():
+                _list.extend(item.winfo_children())
+
+        return _list
 
     @Pyro4.expose
     def get_the_winner(self, winner):
@@ -342,6 +361,7 @@ class GameGui(threading.Thread):
             msg = 'You Lose'
         if self.role == self.TYPE_SPECTATOR:
             msg = 'Player {} Win'.format(winner.replace('player:', ''))
+
         threading.Thread(target=self.__dialog_box_popup, args=(msg,), daemon=True).start()
 
     @Pyro4.expose
@@ -408,7 +428,6 @@ if __name__ == "__main__":
 
     print(app.identifier)
 
-    app.start()
-
+    # app.start()
 
     master.mainloop()
