@@ -45,7 +45,7 @@ class GameRoomController:
         except CommunicationError as e:
             print(e)
 
-    def connect(self, participant, join_type):
+    def connect(self, participant, join_type, username):
         player_type = None
 
         self.lock.acquire()
@@ -78,7 +78,8 @@ class GameRoomController:
                 player_type = self.TYPE_PLAYER_X
             player = {
                 'role': player_type,
-                'info': participant
+                'info': participant,
+                'username': username
             }
             self.players.append(player)
             message = 'joined as player'

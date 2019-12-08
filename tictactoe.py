@@ -88,6 +88,11 @@ class GameGui():
         self.player2_name_entry.grid(row=2, column=1, columnspan=8)
 
     def init_game_screen(self):
+        self.room_name.destroy()
+        self.label_name.destroy()
+        self.name_input.destroy()
+        self.button_join_room.destroy()
+
         self.init_game_buttons()
         self.init_game_positions()
 
@@ -99,9 +104,11 @@ class GameGui():
         self.button_create_game_room.destroy()
         self.game_rooms_available_label.destroy()
 
-        self.connect_to_game_room(game_room_server_name)
+        # self.connect_to_game_room(game_room_server_name)
 
     def init_form_layout(self, game_room_server_name):
+        self.init_form_player_screen(game_room_server_name)
+
         self.room_name = Label(self.master, pady=20, text="You are entering room {}".format(game_room_server_name.replace('game_room_server_', '')), font='Times 15', fg='#ffffff', bg=self.dark_color)
         self.room_name.grid(row=2, column=0)
 
@@ -111,29 +118,29 @@ class GameGui():
         self.name_input = Entry(self.master, textvariable="name")
         self.name_input.grid(row=4, column=0, columnspan=8)
 
-        self.button_join_room = Button(self.master, text="Join Room", font='Times 15 bold', bg='#66B2FF', fg='#ffffff', command=lambda: self.join_room_server(self.name_input.get()))
+        # TODO:
+        self.button_join_room = Button(self.master, text="Join Room", font='Times 15 bold', bg='#66B2FF', fg='#ffffff', command=lambda: self.join_room_server(self.name_input.get(), game_room_server_name))
         self.button_join_room.grid(row=5, column=0, pady=20)
 
-    def join_room_server(self, name):
-        self.room_name.destroy()
-        self.label_name.destroy()
-        self.name_input.destroy()
-        self.button_join_room.destroy()
+        # self.connect_to_game_room(game_room_server_name)
 
-        self.player_name=name
+    def join_room_server(self, username, game_room_server_name):
+        # self.room_name.destroy()
+        # self.label_name.destroy()
+        # self.name_input.destroy()
+        # self.button_join_room.destroy()
+
+        self.player_name = username
+        self.connect_to_game_room(game_room_server_name, username)
         self.init_game_screen()
-        tkinter.messagebox.showinfo("Tic-Tac-Toe", "Welcome {}".format(name))
+        tkinter.messagebox.showinfo("Tic-Tac-Toe", "Welcome {}".format(username))
+
+    def reset_widgets(self):
+        for widget in self.master.winfo_children():
+            widget.destroy()
 
     def back_to_main_menu(self):
-        self.button1.destroy()
-        self.button2.destroy()
-        self.button3.destroy()
-        self.button4.destroy()
-        self.button5.destroy()
-        self.button6.destroy()
-        self.button7.destroy()
-        self.button8.destroy()
-        self.button9.destroy()
+        self.reset_widgets()
 
         self.room_name.destroy()
         self.label_name.destroy()
@@ -225,9 +232,6 @@ class GameGui():
         self.role_label_game.grid(row=7, column=1)
 
     def create_game_room_server(self):
-        # tkinter.messagebox.showinfo("Tic-Tac-Toe", 'ok')
-        # response = threading.Thread(target=self.communication_server.create_room_command, args=(self.identifier,), daemon=True).start()
-        # print(response)
         response = self.communication_server.create_room_command(self.identifier)
         rooms_response = self.communication_server.available_rooms_command()
         self.render_list_of_game_rooms(rooms_response['data'])
@@ -253,11 +257,13 @@ class GameGui():
         selected = self.list_box.get(self.list_box.curselection())
         code = selected.split(' ')[1]
         game_room_server_name = "game_room_server_{}".format(code)
-        self.init_form_player_screen(game_room_server_name)
+        self.init_form_layout(game_room_server_name)
+        # self.init_form_player_screen(game_room_server_name)
 
-    def connect_to_game_room(self, game_room_server_name):
+    # TODO:
+    def connect_to_game_room(self, game_room_server_name, username):
         self.game_room_server = self.connect_to_server(game_room_server_name)
-        response = self.game_room_server.connect({'identifier': self.identifier}, self.TYPE_PLAYER)
+        response = self.game_room_server.connect({'identifier': self.identifier}, self.TYPE_PLAYER, username)
 
         print(response)
 
@@ -265,9 +271,6 @@ class GameGui():
             self.role = response['data']['participant_type']
             self.positions = response['data']['positions']
             self.turn = response['data']['turn']
-            if self.role == 'player:x' or self.role == 'player:o':
-                self.init_name_form_screen(game_room_server_name)
-                return
 
             self.init_game_screen()
 
@@ -412,6 +415,9 @@ if __name__ == "__main__":
         t = threading.Thread(target=start_with_ns, args=(app,))
         t.daemon = True
         t.start()
+    except KeyboardInterrupt:
+        print('Interrupted')
+        sys.exit(0)
     except:
         print('failed to start gui client server')
         sys.exit(0)
