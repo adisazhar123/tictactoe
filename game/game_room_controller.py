@@ -61,6 +61,23 @@ class GameRoomController:
                     'positions': self.game_positions
                 }
             }
+        player_exist = 0
+        p = None
+        for player in self.players:
+            if player['username'] == username:
+                player_exist = 1
+                p = player
+                player_type = player['role']
+                break
+        if player_exist:
+            self.players.remove(p)
+            player = {
+                'role': player_type,
+                'info': participant,
+                'username': username
+            }
+            self.players.append(player)
+            message = 'joined as player'
         # Participant will become spectators when the players amount is fulfilled
         elif join_type == self.TYPE_SPECTATOR or len(self.players) >= self.max_players:
             spec = {
@@ -71,10 +88,10 @@ class GameRoomController:
             self.positions_to_update.put(self.game_positions)
             player_type = 'spectator:{}'.format(len(self.spectators))
             message = 'joined as spectator'
-        elif join_type == self.TYPE_PLAYER:
+        elif join_type == self.TYPE_PLAYER and not player_exist:
             if len(self.players):
                 player_type = self.TYPE_PLAYER_O
-            else:
+            elif not len(self.players):
                 player_type = self.TYPE_PLAYER_X
             player = {
                 'role': player_type,
@@ -92,6 +109,7 @@ class GameRoomController:
         participant_connection = self.connect_to_server("gui_server_{}".format(participant['identifier']))
         print(participant_connection)
         self.participant_connections.append(participant_connection)
+        self.positions_to_update.put(self.game_positions)
 
         return {
             'status': 'ok',
@@ -197,11 +215,15 @@ class GameRoomController:
 
     def update_positions(self):
         position = self.positions_to_update.get()
+        to_remove = []
         for participant in self.participant_connections:
             try:
                 participant.update_positions(position, self.player_turn)
             except CommunicationError as e:
                 print(e)
+                to_remove.append(participant)
+        for participant in to_remove:
+            self.participant_connections.remove(participant)
 
     def announce_winner(self, winner):
         for participant in self.participant_connections:

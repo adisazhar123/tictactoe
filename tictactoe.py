@@ -131,8 +131,8 @@ class GameGui():
         # self.button_join_room.destroy()
 
         self.player_name = username
-        self.connect_to_game_room(game_room_server_name, username)
         self.init_game_screen()
+        self.connect_to_game_room(game_room_server_name, username)
         tkinter.messagebox.showinfo("Tic-Tac-Toe", "Welcome {}".format(username))
 
     def reset_widgets(self):
@@ -147,7 +147,9 @@ class GameGui():
         self.name_input.destroy()
         self.button_join_room.destroy()
 
-        self.name_label_game.destroy()
+        if self.role in [self.TYPE_PLAYER_O, self.TYPE_PLAYER_X]:
+            self.name_label_game.destroy()
+
         self.role_label_game.destroy()
 
         self.init_game_positions()
@@ -274,8 +276,8 @@ class GameGui():
 
             self.init_game_screen()
 
-            if response['data']['participant_type'] not in [self.TYPE_PLAYER_X, self.TYPE_PLAYER_O]:
-                self.game_room_server.update_positions()
+            self.game_room_server.update_positions()
+
             tkinter.messagebox.showinfo("Tic-Tac-Toe", response['message'])
 
     def btnClick(self, buttons):
@@ -369,7 +371,12 @@ class GameGui():
 
     @Pyro4.expose
     def update_positions(self, request, turn):
+        threading.Thread(target=self._update_positions, args=(request, turn,), daemon=True).start()
+
+    def _update_positions(self, request, turn):
+        print('starting')
         for idx, position in enumerate(request):
+            print(idx)
             btn_val = ''
             if position == self.TYPE_PLAYER_O:
                 btn_val = 'O'
@@ -377,8 +384,10 @@ class GameGui():
                 btn_val = 'X'
             if btn_val != '':
                 for button, number in self.button_mapping.items():
-                    if number == (idx+1):
-                        threading.Thread(target=self.change_button_label, args=(button, btn_val, turn), daemon=True).start()
+                    if number == (idx + 1):
+                        threading.Thread(target=self.change_button_label, args=(button, btn_val, turn),
+                                         daemon=True).start()
+        print('done updating positions')
 
     @Pyro4.expose
     def update_list_of_game_rooms(self, request):

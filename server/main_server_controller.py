@@ -51,10 +51,10 @@ class MainServerController(object):
                 'last_used': timestamp,
                 'created_at': timestamp,
             })
-            self.threads.append({
-                'id': identity,
-                'thread': t
-            })
+            # self.threads.append({
+            #     'id': identity,
+            #     'thread': t
+            # })
             self.lock.release()
         except Exception as e:
             return {
