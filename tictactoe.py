@@ -11,6 +11,7 @@ import time
 
 
 # class GameGui(threading.Thread):
+@Pyro4.expose
 class GameGui():
     def __init__(self, master):
         # threading.Thread.__init__(self)
@@ -25,6 +26,8 @@ class GameGui():
         self.dark_color = '#000000'
         self.communication_server = self.connect_to_server('communication_server')
         self.game_room_server = None
+
+        self.game_room_server_code = None
 
         self.flag = 0
 
@@ -261,6 +264,7 @@ class GameGui():
     def list_box_double_click_handler(self, event):
         selected = self.list_box.get(self.list_box.curselection())
         code = selected.split(' ')[1]
+        self.game_room_server_code = code
         game_room_server_name = "game_room_server_{}".format(code)
         self.init_form_layout(game_room_server_name)
         # self.init_form_player_screen(game_room_server_name)
@@ -296,7 +300,14 @@ class GameGui():
             location = self.button_mapping[buttons] - 1
             player_type = self.role
 
-            response = self.game_room_server.make_a_move(location, player_type)
+            try:
+                response = self.game_room_server.make_a_move(location, player_type)
+            except Exception as e:
+                print("le error", e)
+                self.game_room_server = None
+                self.game_room_server = self.connect_to_server("game_room_server_{}".format(self.game_room_server_code))
+                response = self.game_room_server.make_a_move(location, player_type)
+
             self.turn = response['data']['turn']
             if response['data']['winner'] is not None:
                 self.winner = response['data']['winner']

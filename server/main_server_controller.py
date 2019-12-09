@@ -1,4 +1,7 @@
-import os, sys
+import sys
+
+from server import Test
+
 sys.path.insert(1, '/home/andika/Documents/learn/python/tictactoe/game')
 
 import Pyro4
@@ -23,7 +26,25 @@ class MainServerController(object):
         self.available_rooms = []
         self.registered_client = set()
         self.lock = Lock()
-        self.threads = []
+
+        self.game_rooms_obj = {}
+
+        self.test = Test.TestController()
+
+        threading.Thread(target=self.check_objects, daemon=True).start()
+
+    def set_important_props(self, props):
+        self.available_rooms = props['available_rooms']
+        self.game_rooms_obj = props['game_rooms_obj']
+        self.registered_client = props['registered_client']
+
+    @Pyro4.expose
+    def get_important_props(self):
+        return {
+            'available_rooms': self.available_rooms,
+            'game_rooms_obj': self.game_rooms_obj,
+            'registered_client': self.registered_client,
+        }
 
     @Pyro4.expose
     def check_connection(self) -> str:
@@ -51,10 +72,6 @@ class MainServerController(object):
                 'last_used': timestamp,
                 'created_at': timestamp,
             })
-            # self.threads.append({
-            #     'id': identity,
-            #     'thread': t
-            # })
             self.lock.release()
         except Exception as e:
             return {
@@ -123,8 +140,22 @@ class MainServerController(object):
 
     def __create_room(self, identity):
         game_room = GameRoomController(identity)
+        self.game_rooms_obj[identity] = game_room
+
         daemon = Pyro4.Daemon(host = self.config['host'])
         ns = Pyro4.locateNS(self.config['host'], self.config['port'])
         uri = daemon.register(game_room)
         ns.register("game_room_server_{}".format(identity), uri)
         daemon.requestLoop()
+
+    @Pyro4.expose
+    def get_game_room_obj(self, id):
+        props = self.game_rooms_obj[id].get_important_props()
+        print('game room obj is: ', props)
+        return props
+
+    def check_objects(self):
+        while True:
+            for id in self.game_rooms_obj:
+                print(self.game_rooms_obj[id].players)
+            time.sleep(3)

@@ -4,7 +4,6 @@ from threading import Lock, Thread
 
 from Pyro4.errors import CommunicationError
 
-
 @Pyro4.expose
 class GameRoomController:
     def __init__(self, identity):
@@ -28,8 +27,6 @@ class GameRoomController:
 
         self.communication_server = self.connect_to_server("communication_server")
 
-        self.game_ended = 0
-
         self.player_turn = self.TYPE_PLAYER_X
 
         self.positions_to_update = queue.Queue()
@@ -38,6 +35,26 @@ class GameRoomController:
 
         print("Game controller is initialised!")
 
+    def get_important_props(self):
+        return {
+            'players': self.players,
+            'spectators': self.spectators,
+            'participant_connections': self.participant_connections,
+            'game_positions': self.game_positions,
+            'player_turn': self.player_turn,
+            # 'positions_to_update': self.positions_to_update
+        }
+
+    def return_self(self):
+        return self
+
+    def set_important_props(self, props):
+        self.players = props['players']
+        self.spectators = props['spectators']
+        self.participant_connections = props['participant_connections']
+        self.game_positions = props['game_positions']
+        self.player_turn = props['player_turn']
+
     def connect_to_server(self, name):
         try:
             uri = "PYRONAME:{}@localhost:1337".format(name)
@@ -45,6 +62,7 @@ class GameRoomController:
         except CommunicationError as e:
             print(e)
 
+    @Pyro4.expose
     def connect(self, participant, join_type, username):
         player_type = None
 
@@ -122,6 +140,7 @@ class GameRoomController:
             }
         }
 
+    @Pyro4.expose
     def make_a_move(self, location, player_type):
         if player_type not in [self.TYPE_PLAYER_X, self.TYPE_PLAYER_O]:
             return {
@@ -162,10 +181,11 @@ class GameRoomController:
         self.update_positions()
         if response is not None:
             self.announce_winner(response)
-            self.game_ended = 1
             res = self.communication_server.game_ended(self.game_room_name)
             print('response for game ended: {}'.format(res))
         self.lock.release()
+
+        self.communication_server.push_to_replication_server(self.game_room_name, self)
 
         return {
             'status': 'ok',
@@ -177,12 +197,14 @@ class GameRoomController:
             }
         }
 
+    @Pyro4.expose
     def change_player_turn(self):
         if self.player_turn == self.TYPE_PLAYER_X:
             self.player_turn = self.TYPE_PLAYER_O
         else:
             self.player_turn = self.TYPE_PLAYER_X
 
+    @Pyro4.expose
     def check_winner(self):
         # Check horizontal
         if self.game_positions[0] == self.game_positions[1] == self.game_positions[2] is not None:
@@ -210,17 +232,20 @@ class GameRoomController:
 
         return response
 
+    @Pyro4.expose
     def check_tie(self):
         for pos in self.game_positions:
             if pos is None:
                 return None
         return 'tie'
 
+    @Pyro4.expose
     def ping(self):
         return {
             'status': 'ok'
         }
 
+    @Pyro4.expose
     def update_positions(self):
         position = self.positions_to_update.get()
         to_remove = []
@@ -233,6 +258,7 @@ class GameRoomController:
         for participant in to_remove:
             self.participant_connections.remove(participant)
 
+    @Pyro4.expose
     def announce_winner(self, winner):
         for participant in self.participant_connections:
             try:
