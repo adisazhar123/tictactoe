@@ -206,7 +206,15 @@ class GameRoomController:
         elif self.game_positions[2] == self.game_positions[4] == self.game_positions[6] is not None:
             return self.game_positions[2]
 
-        return None
+        response = self.check_tie()
+
+        return response
+
+    def check_tie(self):
+        for pos in self.game_positions:
+            if pos is None:
+                return None
+        return 'tie'
 
     def ping(self):
         return {

@@ -43,6 +43,7 @@ class GameGui():
         self.role = None
 
         self.button_mapping = {}
+        self.turn_label = None
 
         label = Label(self.master, text="Tic Tac Toe", font='Times 15 bold', fg='#ffffff', bg=self.dark_color)
         label.grid(row=1, column=0, columnspan=8)
@@ -230,6 +231,11 @@ class GameGui():
 
         self.button_mapping[self.button9] = 9
 
+        self.turn_label_game = Label(self.master, text='', font='Times 15', fg='#ffffff', bg=self.dark_color)
+        self.turn_label_game.grid(row=8, column=1)
+
+        self.turn_label = self.turn_label_game
+
     def create_game_room_server(self):
         response = self.communication_server.create_room_command(self.identifier)
         rooms_response = self.communication_server.available_rooms_command()
@@ -305,7 +311,12 @@ class GameGui():
     def change_button_label(self, button, val, turn):
         button['text'] = val
         self.turn = turn
-        print(self.turn)
+
+    def change_turn_label(self):
+        if self.role == self.turn:
+            self.turn_label['text'] = 'Your Turn'
+        else:
+            self.turn_label['text'] = self.turn + ' turn'
 
     def gracefully_exits(self):
         print("disconnecting..")
@@ -313,7 +324,7 @@ class GameGui():
         try:
             sys.exit(0)
         except SystemExit:
-            os.exit(0)
+            os._exit()
 
     def communicate(self) -> bool:
         try:
@@ -357,12 +368,14 @@ class GameGui():
     @Pyro4.expose
     def get_the_winner(self, winner):
         print('winner:{}'.format(winner))
-        if winner == self.role:
+        if self.role not in [self.TYPE_PLAYER_O, self.TYPE_PLAYER_X]:
+            msg = 'Player {} Win'.format(winner.replace('player:', ''))            
+        if winner == 'tie':
+            msg = 'Tie'
+        elif winner == self.role:
             msg = 'You Win'
         else:
             msg = 'You Lose'
-        if self.role == self.TYPE_SPECTATOR:
-            msg = 'Player {} Win'.format(winner.replace('player:', ''))
 
         threading.Thread(target=self.__dialog_box_popup, args=(msg,), daemon=True).start()
 
@@ -383,6 +396,8 @@ class GameGui():
                     if number == (idx + 1):
                         threading.Thread(target=self.change_button_label, args=(button, btn_val, turn),
                                          daemon=True).start()
+        self.turn = turn
+        threading.Thread(target=self.change_turn_label, daemon=True).start()
         print('done updating positions')
 
     @Pyro4.expose
