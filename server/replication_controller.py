@@ -49,8 +49,6 @@ class ReplicationController:
         return "function ping from replication_controller"
 
     def restart_game_server(self, room_id):
-        # print("daftar room :", rooms)
-        # for room_id in rooms:
         print('room id', room_id)
         try:
             game_controller_obj = GameRoomController(room_id)

@@ -15,7 +15,7 @@ import time
 class GameGui():
     def __init__(self, master):
         # threading.Thread.__init__(self)
-        self.my_ip = '10.151.30.141'
+        self.my_ip = '10.151.30.148'
         self.ip_adis = '10.151.30.140'
         self.master = master
         self.interval = 1
@@ -382,8 +382,8 @@ class GameGui():
     def get_the_winner(self, winner):
         print('winner:{}'.format(winner))
         if self.role not in [self.TYPE_PLAYER_O, self.TYPE_PLAYER_X]:
-            msg = 'Player {} Win'.format(winner.replace('player:', ''))            
-        if winner == 'tie':
+            msg = 'Player {} Win'.format(winner.replace('player:', ''))
+        elif winner == 'tie':
             msg = 'Tie'
         elif winner == self.role:
             msg = 'You Win'
@@ -426,7 +426,7 @@ class GameGui():
 
 
 def start_with_ns(gui_server):
-    __host = "10.151.30.141"
+    __host = "10.151.30.148"
     __port = 1337
     with Pyro4.Daemon(host=__host) as daemon:
         ns = Pyro4.locateNS(__host, __port)
