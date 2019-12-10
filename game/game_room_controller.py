@@ -55,15 +55,15 @@ class GameRoomController:
         self.game_positions = props['game_positions']
         self.player_turn = props['player_turn']
 
-    def connect_to_server(self, name):
+    def connect_to_server(self, name, ip='0.0.0.0'):
         try:
-            uri = "PYRONAME:{}@localhost:1337".format(name)
+            uri = "PYRONAME:{}@{}:1337".format(name, ip)
             return Pyro4.Proxy(uri)
         except CommunicationError as e:
             print(e)
 
     @Pyro4.expose
-    def connect(self, participant, join_type, username):
+    def connect(self, participant, join_type, username, ip = 'localhost'):
         player_type = None
 
         self.lock.acquire()
@@ -124,7 +124,7 @@ class GameRoomController:
         print('players: ', self.players)
         print('spectators: ', self.spectators)
 
-        participant_connection = self.connect_to_server("gui_server_{}".format(participant['identifier']))
+        participant_connection = self.connect_to_server("gui_server_{}".format(participant['identifier']), ip)
         print(participant_connection)
         self.participant_connections.append(participant_connection)
         self.positions_to_update.put(self.game_positions)

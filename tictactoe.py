@@ -15,6 +15,8 @@ import time
 class GameGui():
     def __init__(self, master):
         # threading.Thread.__init__(self)
+        self.my_ip = '10.151.30.141'
+        self.ip_adis = '10.151.30.140'
         self.master = master
         self.interval = 1
         self.winner = ''
@@ -24,7 +26,7 @@ class GameGui():
         self.type = StringVar()
 
         self.dark_color = '#000000'
-        self.communication_server = self.connect_to_server('communication_server')
+        self.communication_server = self.connect_to_server('communication_server', self.ip_adis)
         self.game_room_server = None
 
         self.game_room_server_code = None
@@ -271,8 +273,8 @@ class GameGui():
 
     # TODO:
     def connect_to_game_room(self, game_room_server_name, username):
-        self.game_room_server = self.connect_to_server(game_room_server_name)
-        response = self.game_room_server.connect({'identifier': self.identifier}, self.TYPE_PLAYER, username)
+        self.game_room_server = self.connect_to_server(game_room_server_name, self.ip_adis)
+        response = self.game_room_server.connect({'identifier': self.identifier}, self.TYPE_PLAYER, username, self.my_ip)
 
         print(response)
 
@@ -305,7 +307,7 @@ class GameGui():
             except Exception as e:
                 print("le error", e)
                 self.game_room_server = None
-                self.game_room_server = self.connect_to_server("game_room_server_{}".format(self.game_room_server_code))
+                self.game_room_server = self.connect_to_server("game_room_server_{}".format(self.game_room_server_code), self.ip_adis)
                 response = self.game_room_server.make_a_move(location, player_type)
 
             self.turn = response['data']['turn']
@@ -415,16 +417,16 @@ class GameGui():
     def update_list_of_game_rooms(self, request):
         self.render_list_of_game_rooms(request['data'])
 
-    def connect_to_server(self, name):
+    def connect_to_server(self, name, ip_adis = 'localhost'):
         try:
-            uri = "PYRONAME:{}@localhost:1337".format(name)
+            uri = "PYRONAME:{}@{}:1337".format(name, ip_adis)
             return Pyro4.Proxy(uri)
         except CommunicationError as e:
             print(e)
 
 
 def start_with_ns(gui_server):
-    __host = "localhost"
+    __host = "10.151.30.141"
     __port = 1337
     with Pyro4.Daemon(host=__host) as daemon:
         ns = Pyro4.locateNS(__host, __port)
@@ -455,7 +457,7 @@ if __name__ == "__main__":
 
     try:
         app.interval = app.communication_server.ping_interval()
-        res = app.communication_server.register_command(app.identifier)
+        res = app.communication_server.register_command(app.identifier, app.my_ip)
         app.communication_server._pyroTimeout = app.interval
         print(res)
         tpa = app.job_ping_server_ping_ack()
