@@ -1,6 +1,6 @@
 import Pyro4
 
-from server.replication_controller import ReplicationController
+from replication_controller import ReplicationController
 
 
 def start_with_ns():

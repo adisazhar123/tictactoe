@@ -1,5 +1,5 @@
 import os, sys
-sys.path.insert(1, '/home/andika/Documents/learn/python/tictactoe/game')
+sys.path.insert(1, '/home/adisazhar/projects/python/tictactoe')
 
 import Pyro4
 from Pyro4.errors import CommunicationError
@@ -30,7 +30,7 @@ class CommunicationServerController(object):
             raise ValueError('could not initiate CommunicationServerController')
 
     def set_important_props(self, props):
-        self.registered_client_connections = props['game_rooms_obj']
+        self.registered_client_connections = props['registered_client_connections']
         self.registered_client = props['registered_client']
 
     @Pyro4.expose
@@ -136,6 +136,7 @@ class CommunicationServerController(object):
             print('in here ok', response)
         except Exception as e:
             print('exksepsi ', e)
+            print(identity, pyro_obj)
             # pass
             self.reconnect_main_server()
             main_server_state = self.main_server_connection.get_important_props()

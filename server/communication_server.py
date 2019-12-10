@@ -1,5 +1,5 @@
 import os, sys
-sys.path.insert(1, '/home/andika/Documents/learn/python/tictactoe/server')
+sys.path.insert(1, '/home/adisazhar/projects/python/tictactoe')
 
 from server.communication_server_controller import CommunicationServerController
 import Pyro4
