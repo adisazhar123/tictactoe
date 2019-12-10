@@ -1,3 +1,6 @@
+import os, sys
+sys.path.insert(1, '/home/bani/Documents/tictactoe')
+
 import time
 
 import Pyro4
@@ -7,17 +10,20 @@ from Pyro4.errors import ConnectionClosedError, CommunicationError
 
 from game.game_room_controller import GameRoomController
 from server.main_server_controller import MainServerController
-
+from server.communication_server_controller import CommunicationServerController
 
 @Pyro4.expose
 class ReplicationController:
     def __init__(self):
         self.config = {'host': 'localhost', 'port': 1337}
         self.main_server_state = None
+        self.communication_server_state = None
 
         self.rooms = {}
         print('replication controller init')
+        self.communication_server_connection = None
         threading.Thread(target=self.ping_game_controllers, daemon=True).start()
+        threading.Thread(target=self.ping_communication_controllers, daemon=True).start()
 
     def new_room(self, identity):
         self.rooms[identity] = None
@@ -62,6 +68,18 @@ class ReplicationController:
 
         daemon.requestLoop()
 
+    def restart_connection_server(self):
+        connection_controller_obj = CommunicationServerController()
+        connection_controller_obj.set_important_props(self.communication_server_state)
+        daemon = Pyro4.Daemon(host=self.config['host'])
+        ns = Pyro4.locateNS(self.config['host'], self.config['port'])
+        uri = daemon.register(connection_controller_obj)
+        ns.register("communication_server", uri)
+
+        print('communication server created')
+
+        daemon.requestLoop()
+
     def connect_to_server(self, name):
         try:
             uri = "PYRONAME:{}@localhost:1337".format(name)
@@ -75,6 +93,12 @@ class ReplicationController:
     def update_main_server_state(self, state):
         self.main_server_state = state
 
+    def update_communication_server_state(self, state):
+        self.communication_server_state = state
+
+    def get_communication_connection(self, communication_connection):
+        self.communication_server_connection = communication_connection
+
     def ping_game_controllers(self):
         while True:
             for roomId in self.rooms:
@@ -85,4 +109,17 @@ class ReplicationController:
                     except Exception as e:
                         threading.Thread(target=self.restart_main_server, daemon=True).start()
                         threading.Thread(target=self.restart_game_server, args=(roomId,), daemon=True).start()
+            time.sleep(3)
+
+    def ping_communication_controllers(self):
+        while self.communication_server_connection is None:
+            print('wua', self.communication_server_connection)
+            time.sleep(1)
+
+        while True:
+            print('gas')
+            try:
+                print('pinging comm server ', self.communication_server_connection.check_connection())
+            except Exception as e:
+                threading.Thread(target=self.restart_connection_server, daemon=True).start()
             time.sleep(3)

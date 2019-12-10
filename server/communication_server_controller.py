@@ -19,6 +19,7 @@ class CommunicationServerController(object):
         self.main_server_connection = self.__connect_server('main_server')
         self.registered_client = set()
         self.registered_client_connections = []
+        self.self_connection = None
         try:
             interval = self.main_server_connection.ping_interval()
             self.main_server_connection._pyroTimeout = interval
@@ -27,6 +28,17 @@ class CommunicationServerController(object):
             print(self.replication_server.ping())
         except:
             raise ValueError('could not initiate CommunicationServerController')
+
+    def set_important_props(self, props):
+        self.registered_client_connections = props['game_rooms_obj']
+        self.registered_client = props['registered_client']
+
+    @Pyro4.expose
+    def get_important_props(self):
+        return {
+            'registered_client_connections': self.registered_client_connections,
+            'registered_client': self.registered_client
+        }
 
     @Pyro4.expose
     def check_connection(self) -> str:
@@ -107,13 +119,19 @@ class CommunicationServerController(object):
 
     @Pyro4.expose
     def push_to_replication_server(self, identity, pyro_obj):
+        if self.self_connection is None:
+            print('terkirim')
+            self.replication_server.get_communication_connection(self.__connect_server('communication_server'))
         try:
             print('di dalem siniii123')
             main_server_state = self.main_server_connection.get_important_props()
-            print('sdhjfgjsdfggj', main_server_state)
+            communication_server_state = self.get_important_props()
+            print('main server state', main_server_state)
+            print('communication server state', communication_server_state)
             game_state = self.main_server_connection.get_game_room_obj(identity)
             response = self.replication_server.update_state(identity, game_state, pyro_obj)
             self.replication_server.update_main_server_state(main_server_state)
+            self.replication_server.update_communication_server_state(communication_server_state)
 
             print('in here ok', response)
         except Exception as e:
@@ -121,9 +139,11 @@ class CommunicationServerController(object):
             # pass
             self.reconnect_main_server()
             main_server_state = self.main_server_connection.get_important_props()
+            communication_server_state = self.get_important_props()
             game_state = self.main_server_connection.get_game_room_obj(identity)
             response = self.replication_server.update_state(identity, game_state, pyro_obj)
             self.replication_server.update_main_server_state(main_server_state)
+            self.replication_server.update_communication_server_state(communication_server_state)
             print('in here ok--2', response)
 
     def __connect_server(self, name):

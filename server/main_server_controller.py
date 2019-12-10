@@ -31,7 +31,7 @@ class MainServerController(object):
 
         self.test = Test.TestController()
 
-        threading.Thread(target=self.check_objects, daemon=True).start()
+        # threading.Thread(target=self.check_objects, daemon=True).start()
 
     def set_important_props(self, props):
         self.available_rooms = props['available_rooms']
@@ -154,8 +154,8 @@ class MainServerController(object):
         print('game room obj is: ', props)
         return props
 
-    def check_objects(self):
-        while True:
-            for id in self.game_rooms_obj:
-                print(self.game_rooms_obj[id].players)
-            time.sleep(3)
+    # def check_objects(self):
+    #     while True:
+    #         for id in self.game_rooms_obj:
+    #             print(self.game_rooms_obj[id].players)
+    #         time.sleep(3)
