@@ -5,7 +5,7 @@ from server.main_server_controller import MainServerController
 import Pyro4
 
 def start_with_ns():
-    __host = "localhost"
+    __host = "10.151.30.140"
     __port = 1337
     with Pyro4.Daemon(host = __host) as daemon:
         main_server = MainServerController()

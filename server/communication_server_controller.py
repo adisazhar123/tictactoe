@@ -16,7 +16,9 @@ logging.basicConfig(filename='CommunicationServerController.log',
 
 class CommunicationServerController(object):
     def __init__(self):
-        self.main_server_connection = self.__connect_server('main_server')
+        self.my_ip = '10.151.30.140'
+
+        self.main_server_connection = self.__connect_server('main_server', self.my_ip)
         self.registered_client = set()
         self.registered_client_connections = []
         self.self_connection = None
@@ -24,7 +26,7 @@ class CommunicationServerController(object):
             interval = self.main_server_connection.ping_interval()
             self.main_server_connection._pyroTimeout = interval
             tpa = self.job_ping_server_ping_ack()
-            self.replication_server = self.__connect_server("replication_server")
+            self.replication_server = self.__connect_server("replication_server", self.my_ip)
             print(self.replication_server.ping())
         except:
             raise ValueError('could not initiate CommunicationServerController')
@@ -98,10 +100,10 @@ class CommunicationServerController(object):
             return self.main_server_connection.delete_room_func(identifier)
 
     @Pyro4.expose
-    def register_command(self, identifier):
+    def register_command(self, identifier, ip='localhost'):
         if identifier in self.registered_client:
             return None
-        self.registered_client_connections.append({'identifier' : identifier, 'connection' : self.__connect_server('gui_server_{}'.format(identifier))})
+        self.registered_client_connections.append({'identifier' : identifier, 'connection' : self.__connect_server('gui_server_{}'.format(identifier), ip)})
         self.registered_client.add(identifier)
         try:
             return self.main_server_connection.register_func(identifier)
@@ -121,7 +123,7 @@ class CommunicationServerController(object):
     def push_to_replication_server(self, identity, pyro_obj):
         if self.self_connection is None:
             print('terkirim')
-            self.replication_server.get_communication_connection(self.__connect_server('communication_server'))
+            self.replication_server.get_communication_connection(self.__connect_server('communication_server', self.my_ip))
         try:
             print('di dalem siniii123')
             main_server_state = self.main_server_connection.get_important_props()
@@ -147,9 +149,9 @@ class CommunicationServerController(object):
             self.replication_server.update_communication_server_state(communication_server_state)
             print('in here ok--2', response)
 
-    def __connect_server(self, name):
+    def __connect_server(self, name, ip='localhost'):
         try:
-            uri = "PYRONAME:{}@localhost:1337".format(name)
+            uri = "PYRONAME:{}@{}:1337".format(name, ip)
             return Pyro4.Proxy(uri)
         except CommunicationError as e:
             logging.error('failed to get {}: {}'.format(name, e))
@@ -179,7 +181,7 @@ class CommunicationServerController(object):
         return t
 
     def reconnect_main_server(self):
-        self.main_server_connection = self.__connect_server('main_server')
+        self.main_server_connection = self.__connect_server('main_server', self.my_ip)
 
     def ping_server(self):
         while True:

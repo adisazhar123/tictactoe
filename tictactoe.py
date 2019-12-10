@@ -75,6 +75,9 @@ class GameGui():
             rooms_response = self.communication_server.available_rooms_command()
             print(rooms_response)
         except (ConnectionClosedError, CommunicationError) as e:
+            self.communication_server = self.connect_to_server('communication_server')
+            rooms_response = self.communication_server.available_rooms_command()
+            print(rooms_response)
             print(str(e))
             self.gracefully_exits()
         self.render_list_of_game_rooms(rooms_response['data'])
@@ -175,8 +178,11 @@ class GameGui():
         label.grid(row=1, column=0, columnspan=8)
 
         self.init_list_of_game_rooms()
-
-        rooms_response = self.communication_server.available_rooms_command()
+        try:
+            rooms_response = self.communication_server.available_rooms_command()
+        except Exception as e:
+            self.communication_server = self.connect_to_server('communication_server')
+            rooms_response = self.communication_server.available_rooms_command()
         self.render_list_of_game_rooms(rooms_response['data'])
 
     def init_game_buttons(self):
@@ -240,8 +246,13 @@ class GameGui():
         self.turn_label = self.turn_label_game
 
     def create_game_room_server(self):
-        response = self.communication_server.create_room_command(self.identifier)
-        rooms_response = self.communication_server.available_rooms_command()
+        try:
+            response = self.communication_server.create_room_command(self.identifier)
+            rooms_response = self.communication_server.available_rooms_command()
+        except Exception as e:
+            self.communication_server = self.connect_to_server('communication_server')
+            response = self.communication_server.create_room_command(self.identifier)
+            rooms_response = self.communication_server.available_rooms_command()
         self.render_list_of_game_rooms(rooms_response['data'])
 
         if response['status'] == 'ok':
@@ -272,6 +283,7 @@ class GameGui():
     # TODO:
     def connect_to_game_room(self, game_room_server_name, username):
         self.game_room_server = self.connect_to_server(game_room_server_name)
+        print('nak kenee lee ', self.game_room_server)
         response = self.game_room_server.connect({'identifier': self.identifier}, self.TYPE_PLAYER, username)
 
         print(response)
@@ -303,7 +315,7 @@ class GameGui():
             try:
                 response = self.game_room_server.make_a_move(location, player_type)
             except Exception as e:
-                print("le error", e)
+                print("le error")
                 self.game_room_server = None
                 self.game_room_server = self.connect_to_server("game_room_server_{}".format(self.game_room_server_code))
                 response = self.game_room_server.make_a_move(location, player_type)
@@ -458,7 +470,7 @@ if __name__ == "__main__":
         res = app.communication_server.register_command(app.identifier)
         app.communication_server._pyroTimeout = app.interval
         print(res)
-        tpa = app.job_ping_server_ping_ack()
+        # tpa = app.job_ping_server_ping_ack()
     except:
         print('failed to connect with communication server')
         sys.exit(0)

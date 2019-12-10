@@ -16,7 +16,7 @@ from server.communication_server_controller import CommunicationServerController
 @Pyro4.expose
 class ReplicationController:
     def __init__(self):
-        self.config = {'host': 'localhost', 'port': 1337}
+        self.config = {'host': '10.151.30.140', 'port': 1337}
         self.main_server_state = None
         self.communication_server_state = None
 
@@ -26,6 +26,8 @@ class ReplicationController:
         self.main_server_connection = None
 
         self.main_server_being_restarted = 0
+
+        self.my_ip = '10.151.30.140'
 
         threading.Thread(target=self.ping_game_controllers, daemon=True).start()
         threading.Thread(target=self.ping_communication_controllers, daemon=True).start()
@@ -63,9 +65,9 @@ class ReplicationController:
             print("{} room created".format(room_id))
             print('check ', game_controller_obj.return_self())
             if 'pyro_connection' in self.rooms[room_id]:
-                self.rooms[room_id]['pyro_connection'] = self.connect_to_server("game_room_server_{}".format(room_id))
+                self.rooms[room_id]['pyro_connection'] = self.connect_to_server("game_room_server_{}".format(room_id), self.my_ip)
             else:
-                self.rooms[room_id] = {'state': {}, 'pyro_connection': self.connect_to_server("game_room_server_{}".format(room_id))}
+                self.rooms[room_id] = {'state': {}, 'pyro_connection': self.connect_to_server("game_room_server_{}".format(room_id), self.my_ip)}
 
             daemon.requestLoop()
         except Exception as e:
@@ -95,9 +97,9 @@ class ReplicationController:
 
         daemon.requestLoop()
 
-    def connect_to_server(self, name):
+    def connect_to_server(self, name, ip='localhost'):
         try:
-            uri = "PYRONAME:{}@localhost:1337".format(name)
+            uri = "PYRONAME:{}@{}:1337".format(name, ip)
             res = Pyro4.Proxy(uri)
             return res
         except Exception as e:
@@ -150,5 +152,5 @@ class ReplicationController:
     def ping_main_server(self):
         while self.main_server_connection is None:
             time.sleep(1)
-            self.main_server_connection = self.connect_to_server("main_server")
+            self.main_server_connection = self.connect_to_server("main_server", self.my_ip)
             print(self.main_server_connection)

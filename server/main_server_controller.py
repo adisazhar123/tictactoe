@@ -22,7 +22,7 @@ logging.basicConfig(filename='MainServerController.log',
 
 class MainServerController(object):
     def __init__(self):
-        self.config = {'host': 'localhost', 'port': 1337}
+        self.config = {'host': '10.151.30.140', 'port': 1337}
         self.available_rooms = []
         self.registered_client = set()
         self.lock = Lock()

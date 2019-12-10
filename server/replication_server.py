@@ -4,7 +4,7 @@ from replication_controller import ReplicationController
 
 
 def start_with_ns():
-    __host = "localhost"
+    __host = "10.151.30.140"
     __port = 1337
     with Pyro4.Daemon(host = __host) as daemon:
         try:
